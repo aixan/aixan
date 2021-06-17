@@ -1,0 +1,69 @@
+{% load static %}
+<style type="text/css">
+    .layui-colla-content {
+        max-height: 400px;
+        overflow: auto;
+    }
+
+    .layui-card-body {
+        max-height: 800px;
+        overflow: auto;
+    }
+</style>
+<div class="layui-card-body">
+    <div class="layui-collapse" id="exec" lay-accordion>
+        {% for host in host %}
+            <div class='layui-colla-item'>
+                <h2 class='layui-colla-title'>{{ host }}</h2>
+                <div class='layui-colla-content {% if forloop.counter == 1 %} layui-show {% endif %}' id='{{ host }}'>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+<script>
+    layui.use(['element', 'layer'], function () {
+        var element = layui.element;
+        $ = layui.jquery
+        var layer = layui.layer;
+        var data = parent.json
+        element.render('exec');
+        for (let index in data.host) {
+            hostname = data.host[index]
+            exec = data.exec.split('\n')
+
+            var connect_info = 'hostname=' + hostname + "&exec=" + exec;
+            protocol = (location.protocol === 'https:') ? 'wss://' : 'ws://';
+            socketURL = protocol + location.hostname + ((location.port) ? (':' + location.port) : '') +
+                '/webssh/exec.html?' + connect_info;
+
+            function socket(socketURL, hostname) {
+                var sock = new WebSocket(socketURL);
+                // 打开 websocket 连接, 打开 web 终端
+                sock.onopen = function () {
+                };
+
+                sock.onmessage = function (res) {
+                    var data = JSON.parse(res.data);
+                    var code = data.code;
+                    var html = document.getElementById(hostname).innerHTML
+                    if (code === 0 && data.type === "info") {
+                        document.getElementById(hostname).innerHTML = html + "<pre>" + data.data + "</pre>"
+                    } else if (code !== 0) {
+                        document.getElementById(hostname).innerHTML = html + "<pre style='color: red'>" + data.data + "</pre>"
+                    } else {
+                        document.getElementById(hostname).innerHTML = html + "<pre style='color: #0000FF'>" + data.data + "</pre>"
+                    }
+                };
+                sock.onerror = function (res) {
+                    console.log("错误：" + res)
+                }
+                sock.onclose = function (res) {
+                    console.log("断开：" + res)
+                }
+            }
+            socket(socketURL, hostname)
+        }
+    });
+</script>
+

@@ -1,0 +1,172 @@
+<div class="layui-card-body">
+    <div class="layui-form" lay-filter="example">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ id }}">
+        <div class="layui-form-item">
+            <label class="layui-form-label">授权用户：</label>
+            <div class="layui-input-block">
+                <input type="text" id="username" name="username" lay-verify="required" placeholder="请选择用户"
+                       value="{{ username }}"
+                       class="layui-input" disabled>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">K8S IP：</label>
+            <div class="layui-input-block">
+                <input type="text" id="hostname" name="hostname" placeholder="请选择k8s" value="{{ hostname }}"
+                       class="layui-input" disabled>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注信息:</label>
+            <div class="layui-input-block">
+                <textarea type="text" id="token" name="token" class="layui-textarea"
+                          placeholder="token">{{ token }}</textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button type="submit" class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">立即提交</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['form', 'table', 'tableSelect', 'upload'], function () {
+        var form = layui.form,
+            layer = layui.layer,
+            table = layui.table,
+            upload = layui.upload,
+            $ = layui.$;
+        var tableSelect = layui.tableSelect;
+
+        tableSelect.render({
+            elem: '#username',	//定义输入框input对象 必填
+            checkedKey: 'id', //表格的唯一建值，非常重要，影响到选中状态 必填
+            searchKey: 'username',	//搜索输入框的name值 默认keyword
+            searchPlaceholder: '关键词搜索',	//搜索输入框的提示文字 默认关键词搜索
+            table: {
+                url: '{% url "user:get_account" %}',
+                method: 'get',
+                request: {
+                    pageName: 'pageIndex',  // 页码的参数名称，默认：page
+                    limitName: 'pageSize'   // 每页数据量的参数名，默认：limit
+                },
+                response: {
+                    statusName: 'code',     // 规定数据状态的字段名称，默认：code
+                    statusCode: 0,          // 规定成功的状态码，默认：0
+                    msgName: 'msg',         // 规定状态信息的字段名称，默认：msg
+                    countName: 'DataCount', // 规定数据总数的字段名称，默认：count
+                    dataName: 'data'        // 规定数据列表的字段名称，默认：data
+                },
+                cols: [[
+                    {type: 'radio'},
+                    {field: 'id', title: 'No', sort: true, hide: true},
+                    {field: 'username', title: '账号'},
+                    {field: 'name', title: '姓名', width: 80},
+                    {field: 'phone', title: '手机号', width: 120},
+                    {field: 'email', title: '邮箱'},
+                ]],
+                page: {
+                    layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'],     // 自定义分页布局
+                    curr: 1,      // 设置默认起始页1
+                    groups: 10,   //只显示10个连续页码,就是说显示10个可见页其他的省略
+                    first: "首页", // 不显示首页
+                    last: "尾页"   // 不显示尾页
+                },
+                limit: 50,
+                limits: [50, 100, 10000],
+            },
+            done: function (elem, data) {
+                var NEWJSON = []
+                layui.each(data.data, function (index, item) {
+                    NEWJSON.push(item.username)
+                })
+                elem.val(NEWJSON.join(","))
+            }
+        })
+
+        tableSelect.render({
+            elem: '#hostname',	//定义输入框input对象 必填
+            checkedKey: 'id', //表格的唯一建值，非常重要，影响到选中状态 必填
+            searchKey: 'hostname',	//搜索输入框的name值 默认keyword
+            searchPlaceholder: '关键词搜索',	//搜索输入框的提示文字 默认关键词搜索
+
+            table: {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                url: '{% url "k8s:k8s_view" %}',
+                method: 'get',
+                toolbar: '#toolbarDemo',
+                request: {
+                    pageName: 'pageIndex',  // 页码的参数名称，默认：page
+                    limitName: 'pageSize'   // 每页数据量的参数名，默认：limit
+                },
+                response: {
+                    statusName: 'code',     // 规定数据状态的字段名称，默认：code
+                    statusCode: 0,          // 规定成功的状态码，默认：0
+                    msgName: 'msg',         // 规定状态信息的字段名称，默认：msg
+                    countName: 'DataCount', // 规定数据总数的字段名称，默认：count
+                    dataName: 'data'        // 规定数据列表的字段名称，默认：data
+                },
+                cols: [[
+                    {type: 'radio'},
+                    {field: 'id', title: 'No', sort: true, hide: true},
+                    {field: 'name', title: '集群名称', sort: true},
+                    {field: 'hostname', title: 'IP', width: 200},
+                    {field: 'desc', title: '备注', sort: true},
+                ]],
+                page: {
+                    layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'],     // 自定义分页布局
+                    curr: 1,      // 设置默认起始页1
+                    groups: 10,   //只显示10个连续页码,就是说显示10个可见页其他的省略
+                    first: "首页", // 不显示首页
+                    last: "尾页"   // 不显示尾页
+                },
+                limit: 50,
+                limits: [50, 100, 10000],
+            },
+            done: function (elem, data) {
+                var NEWJSON = []
+                layui.each(data.data, function (index, item) {
+                    NEWJSON.push(item.hostname)
+                })
+                elem.val(NEWJSON.join(","))
+            }
+        })
+        /**
+         * 初始化表单，要加上，不然刷新部分组件可能会不加载
+         */
+
+        form.render();
+        // 当前弹出层，防止ID被覆盖
+        var parentIndex = layer.index;
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            data = data.field
+            layer.confirm('是否确认添加', {
+                btn: ['确认', '关闭'] //按钮
+            }, function (index, layero) {
+                $.ajax({
+                    url: "{% url 'k8s:edit_auth' %}",
+                    type: "post",
+                    data: data,
+                    success: function (result) {
+                        if (result.code === 0) {
+                            // 修改完成后,本地直接更新数据,这样就无需刷新一次了 obj.update({zone: zone});
+                            layer.msg(result.msg, {icon: 6});
+                            parent.layui.table.reload("testReload");
+                            layer.close(index);
+                            layer.close(parentIndex);
+                        } else {
+                            layer.msg(result.msg, {icon: 6});
+                            parent.layui.table.reload("testReload");
+                            layer.close(index);
+                            layer.close(parentIndex);
+                        }
+                    }
+                });
+            });
+        });
+        return false;
+    });
+</script>

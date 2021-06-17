@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+    <div class="layuimini-container layuimini-page-anim">
+        <div class="layuimini-main">
+
+            <fieldset class="table-search-fieldset">
+                <legend>搜索信息</legend>
+                <div style="margin: 10px 10px 10px 10px">
+                    <form class="layui-form layui-form-pane" action="">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">状态</label>
+                                <div class="layui-input-inline">
+                                    <select name="state" lay-search="">
+                                        <option value="">所有状态</option>
+                                        {% for i in category_list %}
+                                            <option value="{{ i }}" {% if i == filter_category %}
+                                                    selected{% endif %}>{{ i }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">IP</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="IP" autocomplete="off" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">监控项</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="problem" autocomplete="off" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">故障时间</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="f_time" id="f_time" placeholder="yyyy-MM-dd" autocomplete="off" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <button type="submit" class="layui-btn layui-btn-primary" lay-submit
+                                        lay-filter="data-search-btn"><i class="layui-icon"></i> 搜 索
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </fieldset>
+
+            <script type="text/html" id="toolbarDemo">
+                <div class="layui-btn-container">
+                    <button class="layui-btn layui-btn-sm layui-btn-danger data-delete-btn" lay-event="delete"> 删除
+                    </button>
+                </div>
+            </script>
+
+            <table class="layui-hide" id="demo" lay-filter="currentTableFilter"></table>
+
+            <script type="text/html" id="barDemo">
+                <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+                <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+            </script>
+
+        </div>
+    </div>
+
+    <script>
+        layui.use(['form', 'table', 'miniPage', 'element', 'laydate'], function () {
+            var $ = layui.jquery,
+                form = layui.form,
+                table = layui.table,
+                miniPage = layui.miniPage;
+            form.render();
+            var laydate = layui.laydate;
+            laydate.render({
+                elem: '#f_time'
+            });
+            table.render({
+                elem: '#demo',
+                id: 'testReload',
+                height: 'full-252', //容器高度
+                url: '/info/get_page',
+                method: 'get',
+                toolbar: '#toolbarDemo',
+                request: {
+                    pageName: 'pageIndex',  // 页码的参数名称，默认：page
+                    limitName: 'pageSize'   // 每页数据量的参数名，默认：limit
+                },
+                response: {
+                    statusName: 'code',     // 规定数据状态的字段名称，默认：code
+                    statusCode: 0,          // 规定成功的状态码，默认：0
+                    msgName: 'msg',         // 规定状态信息的字段名称，默认：msg
+                    countName: 'DataCount', // 规定数据总数的字段名称，默认：count
+                    dataName: 'data'        // 规定数据列表的字段名称，默认：data
+                },
+                cols: [[
+                    {type: 'checkbox'},
+                    {field: 'id', title: 'No', width: 80, sort: true},
+                    {field: 'state', title: '状态', width: 80, sort: true},
+                    {field: 'IP', title: 'IP', width: 150},
+                    {field: 'problem', title: '监控项', width: 200},
+                    {field: 'why', title: '故障原因', width: 200},
+                    {field: 'e_time', title: '持续时间', sort: true, width: 120},
+                    {field: 'f_time', title: '故障时间', width: 160},
+                    {field: 'r_time', title: '恢复时间', width: 160},
+                    {field: 'e_id', title: '故障ID'},
+                    {fixed: 'right', title: '操作', toolbar: '#barDemo', width: 120, align: 'center'}
+                ]],
+                page: {
+                    layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'],     // 自定义分页布局
+                    curr: 1,      // 设置默认起始页1
+                    groups: 10,   //只显示10个连续页码,就是说显示10个可见页其他的省略
+                    first: "首页", // 不显示首页
+                    last: "尾页"   // 不显示尾页
+                },
+                limit: 50,
+                limits: [50, 100, 10000],
+
+            });
+            // 监听搜索操作
+            form.on('submit(data-search-btn)', function (data) {
+                data = data.field
+                //执行搜索重载
+                table.reload('testReload', {
+                    url: "/info/search_page",
+                    page: {
+                        curr: 1,
+                        limits: [1]
+                    }
+                    , where: {
+                        state: data.state,
+                        IP: data.IP,
+                        problem: data.problem,
+                        f_time: data.f_time,
+                    }
+                });
+                return false;
+            });
+
+            /**
+             * toolbar事件监听
+             */
+            table.on('toolbar(currentTableFilter)', function (obj) {
+                if (obj.event === 'add') {   // 监听添加操作
+                    var content = miniPage.getHrefContent('page/table/add.html');
+                    var openWH = miniPage.getOpenWidthHeight();
+
+                    var index = layer.open({
+                        title: '添加用户',
+                        type: 1,
+                        shade: 0.2,
+                        maxmin: true,
+                        shadeClose: true,
+                        area: [openWH[0] + 'px', openWH[1] + 'px'],
+                        offset: [openWH[2] + 'px', openWH[3] + 'px'],
+                        content: content,
+                    });
+                    $(window).on("resize", function () {
+                        layer.full(index);
+                    });
+                } else if (obj.event === 'delete') {  // 监听删除操作
+                    var checkStatus = table.checkStatus('currentTableId')
+                        , data = checkStatus.data;
+                    layer.alert(JSON.stringify(data));
+                }
+            });
+
+            //监听表格复选框选择
+            table.on('checkbox(currentTableFilter)', function (obj) {
+            });
+
+            table.on('tool(currentTableFilter)', function (obj) {
+                var data = obj.data;
+                if (obj.event === 'edit') {
+                    layer.prompt({
+                        formType: 2, title: "编辑表格", btn: ['修改数据', '关闭'], anim: 4,
+                        content: `<div>
+                    序&emsp;&emsp;号: <input type="text" style='display:inline-block' id="id"><br><br>
+                    状&emsp;&emsp;态: <input type="text" style='display:inline-block' id="state"><br><br>
+                    持续时间: <input type="text" style='display:inline-block' id="e_time"><br><br>
+                    恢复时间: <input type="text" style='display:inline-block' id="r_time">
+               </div>`,
+                        yes: function (index, layero) {
+                            var id = $("#id").val();
+                            var state = $("#state").val();
+                            var e_time = $("#e_time").val();
+                            var r_time = $("#r_time").val();
+                            $.ajax({
+                                url: "/info/update_page",
+                                type: "get",
+                                data: {
+                                    "id": id,
+                                    "state": state,
+                                    "e_time": e_time,
+                                    "r_time": r_time
+                                },
+                                success: function (recv) {
+                                    // 修改完成后,本地直接更新数据,这样就无需刷新一次了
+                                    obj.update({
+                                        state: state,
+                                        e_time: e_time,
+                                        r_time: r_time
+                                    });
+                                    layer.msg("修改完成了..", {icon: 6});
+                                    layer.close(index);
+                                }
+                            });
+                        }
+                    });
+                    $("#id").val(data.id);
+                    $("#state").val(data.state);
+                    $("#e_time").val(data.e_time);
+                    $("#r_time").val(data.r_time);
+                } else if (obj.event === 'del') {
+                    layer.confirm('真的要删除本行数据吗 ?', {icon: 3, anim: 2}, function (index) {
+                        $.ajax({
+                            url: "/info/delete_page",
+                            type: "get",
+                            data: {"id": obj.data['id']},
+                            success: function (recv) {
+                                layer.msg("删除完成了..", {icon: 6});
+                            }
+                        });
+                        obj.del();
+                        layer.close(index);
+                    });
+
+                }
+            });
+        });
+    </script>
+{% endblock content %}

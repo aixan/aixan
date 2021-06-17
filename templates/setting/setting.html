@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+    <div class="layuimini-container layuimini-page-anim">
+        <div class="layuimini-main">
+            <div class="layui-tab layui-tab-brief" lay-filter="docDemoTabBrief">
+                <ul class="layui-tab-title">
+                    <li>基本设置</li>
+                    <li>安全设置</li>
+                    <li>LDAP设置</li>
+                    <li class="layui-this">密钥设置</li>
+                    <li>关于</li>
+                </ul>
+                <div class="layui-tab-content" style="height: 100%;">
+
+                    <div class="layui-form" lay-filter="example">
+                        {% csrf_token %}
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">公钥：</label>
+                            <div class="layui-input-block">
+                                <textarea name="public_key" placeholder="请输入备注信息" class="layui-textarea"
+                                          style="height: 150px">{{ public_key }}</textarea>
+                                <tip>一般位于 ~/.ssh/id_rsa.pub</tip>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">私钥：</label>
+                            <div class="layui-input-block">
+                                <textarea name="private_key" placeholder="请输入备注信息" class="layui-textarea"
+                                          style="height: 400px">{{ private_key }}</textarea>
+                                <tip>一般位于 ~/.ssh/id_rsa</tip>
+                            </div>
+                        </div>
+                        <div class="layui-form-item ">
+                            <div class="layui-input-block">
+                                <button type="submit" class="layui-btn layui-btn-normal" lay-submit
+                                        lay-filter="savekey">立即提交
+                                </button>
+                                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script>
+        layui.use(['form', 'table', 'miniPage', 'element'], function () {
+            var $ = layui.jquery,
+                form = layui.form,
+                table = layui.table,
+                miniPage = layui.miniPage;
+            form.render();
+            form.on('submit(savekey)', function (data) {
+                data = data.field
+                layer.confirm('是否确认添加', {
+                    btn: ['确认', '关闭'] //按钮
+                }, function (index, layero) {
+                    $.ajax({
+                        url: "{% url "setting:get_key" %}",
+                        type: "post",
+                        data: data,
+                        success: function (res) {
+                            if (res.code === 0) {
+                                layer.msg(res.msg, {icon: 6});
+                                parent.layui.table.reload("testReload");
+                            } else {
+                                layer.msg(res.msg, {icon: 5});
+                            }
+                            layer.close(parentIndex);
+                        }
+                    });
+                });
+            });
+
+            /**
+             * toolbar事件监听
+             */
+            table.on('toolbar(currentTableFilter)', function (obj) {
+                if (obj.event === 'add') {   // 监听添加操作
+                    {#var content = miniPage.getHrefContent('{% url 'exec:add' %}');#}
+                    var index = layer.open({
+                        title: '添加模板',
+                        type: 1,
+                        shade: 0.2,
+                        {#maxmin: true,#}
+                        shadeClose: true,
+                        area: '700px',
+                        offset: 'auto',
+                        content: content,
+                    });
+                    $(window).on("resize", function () {
+                        layer.full(index);
+                    });
+                }
+                return false;
+            });
+
+            table.on('tool(currentTableFilter)', function (obj) {
+                var data = obj.data;
+                json = data
+                if (obj.event === 'edit') {
+                    {#var content = miniPage.getHrefContent('{% url 'exec:edit' %}?id=' + data.id);#}
+                    var index = layer.open({
+                        title: '编辑模板',
+                        type: 1,
+                        shade: 0.2,
+                        shadeClose: true,
+                        area: '700px',
+                        offset: 'auto',
+                        content: content,
+                    });
+                    $(window).on("resize", function () {
+                        layer.full(index);
+                    });
+                }
+                return false;
+            });
+        });
+    </script>
+{% endblock content %}

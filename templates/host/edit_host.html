@@ -1,0 +1,233 @@
+<style>
+    .layui-form-label1 {
+        float: left;
+        display: block;
+        padding: 9px 5.5px;
+        /* width: 80px; */
+        font-weight: 400;
+        line-height: 20px;
+        text-align: right;
+    }
+
+    .layui-form-label2 {
+        float: left;
+        display: block;
+        padding: 9px 15px;
+        width: 80px;
+        font-weight: 400;
+        line-height: 20px;
+        text-align: right;
+    }
+
+    .layui-form-item .layui-input-inline1 {
+        float: left;
+    }
+</style>
+<div class="layui-card-body">
+    <div class="layui-form" lay-filter="example">
+        {% csrf_token %}
+        <input type="hidden" name="id" id="did" value="{{ host.id }}">
+        <div class="layui-row layui-col-space10 layui-form-item">
+            <div class="layui-col-lg7">
+                <label class="layui-form-label2">主机类别：</label>
+                <div class="layui-input-block">
+                    <select id="types" name="types" lay-filter="types" lay-verify="required">
+                    </select>
+                </div>
+            </div>
+            <div class="layui-col-lg5">
+                <tr>
+                    <td>
+                        <button type="button" class="layui-btn layui-btn-normal" id="addzone">添加类别</button>
+                    </td>
+                    <td>
+                        <button type="button" class="layui-btn layui-btn-normal" id="editzone">编辑类别</button>
+                    </td>
+                </tr>
+            </div>
+        </div>
+        <div class="layui-row layui-col-space10 layui-form-item">
+            <div class="layui-col-lg6">
+                <label class="layui-form-label2">主机名称：</label>
+                <div class="layui-input-block">
+                    <input type="text" name="name" lay-verify="required" placeholder="请输入主机名名称" value="{{ host.name }}"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-col-lg6">
+                <label class="layui-form-label2">操作系统：</label>
+                <div class="layui-input-block">
+                    <select id="system" name="system" lay-verify="required" placeholder="请选择主机操作系统" lay-search="">
+                        <option value="">请选择主机操作系统</option>
+                        <option value="1" {% if host.system == "1" %} selected="" {% endif %}>Linux</option>
+                        <option value="2" {% if host.system == "2" %} selected="" {% endif %}>Windows</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-form-label2">链接地址：</div>
+            <label class="layui-form-label1">SSH</label>
+            <div class="layui-input-inline1">
+                <input type="text" name="username" lay-verify="required" placeholder="请输入用户名" autocomplete="off"
+                       class="layui-input" value="{{ host.username }}">
+            </div>
+            <label class="layui-form-label1">@</label>
+            <div class="layui-input-inline1">
+                <input type="text" name="hostname" lay-verify="required" placeholder="主机名/IP地址" autocomplete="off"
+                       class="layui-input" value="{{ host.hostname }}">
+            </div>
+            <label class="layui-form-label1">-P</label>
+            <div class="layui-input-inline1">
+                <input type="text" name="port" lay-verify="required" placeholder="端口" autocomplete="off"
+                       class="layui-input" value="{{ host.port }}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label2">主机密钥：</label>
+            <div class="layui-input-block">
+                <textarea name="pkey" id="pkey" placeholder="请输入备注信息"
+                          class="layui-textarea layui-hide">{{ host.pkey  | default_if_none:"" }}</textarea>
+                <button type="button" class="layui-btn" id="test3"><i class="layui-icon"></i>点击上传</button>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label2">备注信息：</label>
+            <div class="layui-input-block">
+                <textarea name="desc" placeholder="请输入备注信息"
+                          class="layui-textarea">{{ host.desc | default_if_none:"" }}</textarea>
+            </div>
+        </div>
+        <div class="layui-form-item ">
+            <div class="layui-input-block">
+                <button type="submit" class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">立即提交</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['upload', 'form'], function () {
+        var form = layui.form,
+            layer = layui.layer,
+            upload = layui.upload,
+            $ = layui.$;
+        csrf_token = $('[name="csrfmiddlewaretoken"]').val();
+        var did = $("#did").val()
+
+        upload.render({
+            elem: '#test3',
+            url: '{% url "host:host" %}', //改成您自己的上传接口
+            type: "post",
+            headers: {"X-CSRFToken": csrf_token},
+            accept: 'file', //普通文件
+            done: function (res) {
+                if (res.code === 0) {
+                    console.log(res)
+                    $("#pkey").val(res.data)
+                    layer.msg(res.msg);
+                }
+            }
+        });
+
+        $.ajax({
+            id: 'formReload',
+            type: "get",
+            url: "{% url 'host:get_type' %}",
+            async: false,
+            success: function (res) {
+                if (res.code === 0) {
+                    for (let index in res.data) {
+                        types = res.data[index];
+                        $("#types").append('<option value=' + types + '>' + types + '</option>')
+                    }
+                    if (did === "") {
+                        $("#system").val("1")
+                        $("#types").val(res.data[0])
+                    } else {
+                        $("#types").val("{{ host.types }}")
+                    }
+                }
+            },
+            error: function () {
+                layer.msg("服务器接口异常！", {icon: 5})
+            }
+        });
+        form.render();
+        var parentIndex = layer.index;
+        form.on('submit(saveBtn)', function (data) {
+            data = data.field
+            layer.prompt({
+                formType: 1,
+                title: '请输入密码',
+                area: ['800px', '350px']
+            }, function (value, index, elem) {
+                data['password'] = value
+                $.ajax({
+                    url: "{% url "host:edit_host" %}",
+                    type: "post",
+                    data: data,
+                    success: function (result) {
+                        if (result.code === 0) {
+                            // 修改完成后,本地直接更新数据,这样就无需刷新一次了 obj.update({zone: zone});
+                            layer.msg(result.msg, {icon: 6});
+                            parent.layui.table.reload("testReload");
+                        } else {
+                            layer.msg(result.msg, {icon: 5});
+                        }
+                        layer.close(index);
+                        layer.close(parentIndex);
+                    }
+                });
+            });
+        });
+        layui.$('#addzone').on('click', function () {
+            layer.prompt({title: '添加主机类别', formType: 3}, function (types, index) {
+                $.ajax({
+                    url: "{% url "host:get_type" %}",
+                    type: "post",
+                    data: {"types": types},
+                    headers: {"X-CSRFToken": csrf_token},
+                    success: function (res) {
+                        if (res.code === 0) {
+                            layer.msg(res.msg, {icon: 6});
+                            $("#types").append('<option value=' + types + '>' + types + '</option>')
+                        } else {
+                            layer.msg(res.msg, {icon: 5});
+                        }
+                        $("#types").val(types)
+                        form.render();
+                        layer.close(index)
+                    }
+                });
+            });
+            return false;
+        });
+        layui.$('#editzone').on('click', function () {
+            var name = $("#types").val();
+            layer.prompt({title: '修改主机类别', formType: 3, value: name}, function (types, index) {
+                $.ajax({
+                    url: "{% url "host:get_type" %}",
+                    type: "put",
+                    data: {"name": name, "types": types},
+                    headers: {"X-CSRFToken": csrf_token},
+                    success: function (res) {
+                        if (res.code === 0) {
+                            layer.msg(res.msg, {icon: 6});
+                            $("#types option[value=" + name + "]").remove();
+                            $("#types").append('<option value=' + types + '>' + types + '</option>')
+                            $("#types").val(types)
+                            parent.layui.table.reload("testReload");
+                        } else {
+                            layer.msg(res.msg, {icon: 5});
+                            $("#types").val(types)
+                        }
+                        form.render();
+                        layer.close(index)
+                    }
+                });
+            });
+            return false;
+        });
+    });
+</script>

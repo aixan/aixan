@@ -1,0 +1,82 @@
+{% load static %}
+
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main">
+        <table class="layui-hide" id="history" lay-filter="historyTableFilter"></table>
+
+        <script type="text/html" id="barhistory">
+            <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="view">查看</a>
+        </script>
+
+    </div>
+</div>
+<script>
+    layui.use(['table', 'miniPage'], function () {
+        var $ = layui.jquery,
+            table = layui.table,
+            miniPage = layui.miniPage;
+
+        table.render({
+            elem: '#history',
+            height: 'full-100', //容器高度
+            url: '{% url 'exec:schedule_hist' %}?id=' + parent.aixan,
+            method: 'get',
+            request: {
+                pageName: 'pageIndex',  // 页码的参数名称，默认：page
+                limitName: 'pageSize'   // 每页数据量的参数名，默认：limit
+            },
+            response: {
+                statusName: 'code',     // 规定数据状态的字段名称，默认：code
+                statusCode: 0,          // 规定成功的状态码，默认：0
+                msgName: 'msg',         // 规定状态信息的字段名称，默认：msg
+                countName: 'DataCount', // 规定数据总数的字段名称，默认：count
+                dataName: 'data'        // 规定数据列表的字段名称，默认：data
+            },
+            cols: [[
+                {field: 'id', title: 'No', hide: true},
+                {field: 'run_time', title: '执行时间', align: 'center'},
+                {field: 'status', title: '执行状态', align: 'center', templet: status},
+                {field: '', title: '操作', toolbar: '#barhistory', align: 'center'},
+            ]],
+            page: {
+                layout: ['count', 'prev', 'page', 'next', 'skip'],     // 自定义分页布局
+                curr: 1,      // 设置默认起始页1
+                groups: 1,   //只显示10个连续页码,就是说显示10个可见页其他的省略
+                first: "首页", // 不显示首页
+                last: "尾页"   // 不显示尾页
+            },
+            limit: 50,
+            limits: [50, 100, 10000],
+        });
+
+        function status(d) {
+            result = ''
+            if (d.status === 0) {
+                result = "<span style='color: #009900'>成功</span>"
+            } else if (d.status === 1) {
+                result = "<span style='color: red'>异常</span>"
+            } else if (d.status === 2) {
+                result = "<span style='color: red'>失败</span>"
+            }
+            return result
+        }
+
+        table.on('tool(historyTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'view') {
+                content =
+                layer.open({
+                    title: '详情',
+                    type: 1,
+                    shade: 0.2,
+                    {#maxmin: true,#}
+                    shadeClose: true,
+                    area: '700px',
+                    offset: 'auto',
+                    content: miniPage.getHrefContent('{% url 'exec:schedule_view' %}?hid=' + data.id),
+                });
+            }
+            return false;
+        });
+    });
+</script>

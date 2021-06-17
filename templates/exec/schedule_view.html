@@ -1,0 +1,87 @@
+<style>
+    /* 重置 - 去掉下划线 */
+    .layui-tab-title {
+        border-bottom: none;
+    }
+
+    /* 增加背景 */
+    .layui-tab-title .layui-this {
+        background: #FFAF09;
+    }
+
+    /* 重置 -this无边框 */
+    .layui-tab-title .layui-this:after {
+        border: none;
+    }
+
+    /* 重置 -纵向显示 */
+    .layui-tab-title li {
+        display: list-item;
+    }
+</style>
+
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main welcome">
+        <div class="layui-row layui-col-space15" style="text-align: center !important;">
+
+            <div class="layui-col-xs12 layui-col-md4">
+                <div class="layui-card">
+                    <div class="layui-card-header">执行成功</div>
+                    <div class="layui-card-body">
+                        <div class="layui-row layui-col-space5">
+                            <div class="layui-col-xs12 layui-col-md12">
+                                <p style="color: blue;font-size: 30px">{{ success }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-xs12 layui-col-md4">
+                <div class="layui-card">
+                    <div class="layui-card-header">执行成功</div>
+                    <div class="layui-card-body">
+                        <div class="layui-row layui-col-space5">
+                            <div class="layui-col-xs12 layui-col-md12">
+                                <p style="color: #FF0000;font-size: 30px">{{ failure }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-col-xs12 layui-col-md4">
+                <div class="layui-card">
+                    <div class="layui-card-header">平均耗时</div>
+                    <div class="layui-card-body">
+                        <div class="layui-row layui-col-space5">
+                            <div class="layui-col-xs12 layui-col-md12">
+                                <p style="color: #0c0f13;font-size: 30px">{{ duration }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-row layui-tab">
+                <ul class="layui-tab-title layui-col-md3">
+                    {% for i in outputs %}
+                        <li {% if forloop.counter == 1 %}class="layui-this"{% endif %}>{{ i.name }}</li>
+                    {% endfor %}
+                </ul>
+                <div class="layui-tab-content layui-col-md9">
+                    {% for i in outputs %}
+                        <div class="layui-tab-item {% if forloop.counter == 1 %}layui-show{% endif %}">
+                            执行时间：{{ run_time }}<br>
+                            运行耗时：{{ i.duration }} s<br>
+                            返回状态：{{ i.code }}（非 0 则判定为失败）<br>
+                            执行输出：<br><br>
+                            <div id="log-text" style="max-height:300px;overflow:auto;height: 300px;background-color: black;color: white;padding: 10px;font-size: 16px">
+                                <pre>{{ i.output }}</pre>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

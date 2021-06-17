@@ -1,0 +1,399 @@
+{% load static %}
+<div class="layui-card-body">
+
+    <div class="layui-form layuimini-form" lay-filter="example">
+        {% csrf_token %}
+        <input type="hidden" id="did" name="id" value="{{ data.id }}">
+        <input type="hidden" id="trigger" name="trigger"
+               value="{% if data.trigger %}{{ data.trigger }}{% else %}interval{% endif %}">
+        <div class="layui-carousel" id="stepForm" lay-filter="stepForm" style="margin: 0 auto;">
+            <div carousel-item style="margin-top: 20px">
+                <div>
+                    <div class="layui-row layui-col-space10 layui-form-item">
+                        <div class="layui-col-lg8">
+                            <label class="layui-form-label required">任务类别：</label>
+                            <div class="layui-input-block">
+                                <select id="types" name="types" lay-filter="types" lay-verify="required">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-col-lg4">
+                            <tr>
+                                <td>
+                                    <button type="button" class="layui-btn layui-btn-normal" id="addtype">添加类别</button>
+                                </td>
+                                <td>
+                                    <button type="button" class="layui-btn layui-btn-normal" id="edittype">编辑类别</button>
+                                </td>
+                            </tr>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label required">任务名称：</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="name" lay-verify="required" placeholder="请输入模板名称"
+                                   value="{{ data.name }}" class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">任务内容：</label>
+                        <div class="layui-input-block">
+                            <div id="yaml-edit" style="height: 240px;width:100%;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">失败通知：</label>
+                            <div class="layui-input-block">
+                                <select name="rst_notify.mode" lay-filter="rst_notify.mode" lay-verify="required">
+                                    <option value="0" {% if data.rst_notify.mode == "0" %} selected {% endif %}>关闭
+                                    </option>
+                                    <option value="1" {% if data.rst_notify.mode == "1" %} selected {% endif %}>钉钉
+                                    </option>
+                                    <option value="2" {% if data.rst_notify.mode == "2" %} selected {% endif %}>企业微信
+                                    </option>
+                                    <option value="3" {% if data.rst_notify.mode == "3" %} selected {% endif %}>
+                                        Webhook
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <input type="text" id="rst_notify" name="rst_notify.value" placeholder="请输入告警链接"
+                                   value="{{ data.rst_notify.value }}" class="layui-input"
+                                    {% if data.rst_notify.mode == "0" or not data.rst_notify.mode %}
+                                   disabled
+                                    {% else %}
+                                   lay-verify="required"
+                                    {% endif %}
+                            >
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">备注信息：</label>
+                        <div class="layui-input-block">
+                            <textarea name="desc" placeholder="请输入备注信息"
+                                      class="layui-textarea">{{ data.desc }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="next1">下一步</button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label required">执行主机：</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="hostname" name="targets" lay-verify="" placeholder="请选择执行主机"
+                                   value="{{ data.targets }}" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item" style="margin-top: 100px">
+                        <div class="layui-input-block">
+                            <button class="layui-btn layui-btn-primary pre" id="pre1">上一步</button>
+                            <button class="layui-btn next" lay-submit lay-filter="next2">下一步</button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="layui-tab layui-tab-brief" lay-filter="docDemoTabBrief">
+                        <ul class="layui-tab-title" style="text-align: center !important;">
+                            <li class="layui-this">普通间隔</li>
+                            <li>定时间隔</li>
+                            <li>UNIX Cron</li>
+                        </ul>
+                        <div class="layui-tab-content">
+                            <div class="layui-tab-item layui-show">
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label required">间隔时间：</label>
+                                    <div class="layui-input-block">
+                                        <input type='number' id="interval" name='interval' class='layui-input'
+                                               lay-reqtext='MX优先级不能为空' placeholder='请输入MX优先级' value="">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="layui-tab-item">
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label required">执行时间：</label>
+                                    <div class="layui-input-block">
+                                        <input type='text' id="date" class='layui-input' name='date' value=""
+                                               placeholder='yyyy-MM-dd HH:mm:ss'>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="layui-tab-item">
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label required">执行规则：</label>
+                                    <div class="layui-input-block" id="tab3">
+                                        <input type='text' id="cron" name='cron' class='layui-input' value=""
+                                               lay-reqtext='MX优先级不能为空' placeholder='请输入MX优先级' value="">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn layui-btn-primary pre" id="pre2">上一步</button>
+                            <button type="submit" class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">
+                                立即提交
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/static/layuimini/js/lay-module/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+    var yaml = ace.edit("yaml-edit")
+    //设置编辑器样式，对应theme-*.js文件
+    yaml.setTheme("ace/theme/chrome");
+    //设置代码语言，对应mode-*.js文件
+    yaml.session.setMode("ace/mode/text");
+    //设置打印线是否显示
+    yaml.setShowPrintMargin(false);
+    //字体大小
+    yaml.setFontSize(16);
+    //自动换行
+    yaml.setOption("wrap", true)
+    //设置只读（true时只读，用于展示代码）
+    yaml.setValue(`{{ data.command }}`);
+</script>
+<script>
+    layui.use(['laydate', 'form', 'table', 'step', 'tableSelect', 'element'], function () {
+        var form = layui.form,
+            layer = layui.layer,
+            step = layui.step,
+            element = layui.element,
+            laydate = layui.laydate,
+            miniPage = layui.miniPage,
+            $ = layui.$;
+        var did = $("#did").val()
+        csrf_token = $('[name="csrfmiddlewaretoken"]').val();
+
+        element.on('tab(docDemoTabBrief)', function (data) {
+            if (data.index === 0) {
+                $("#trigger").val("interval")
+                $(".layui-tab input").attr({"lay-verify": ""})
+                $("#interval").attr({"lay-verify": "required"})
+            } else if (data.index === 1) {
+                $("#trigger").val("date")
+                $(".layui-tab input").attr("lay-verify", "")
+                $("#date").attr("lay-verify", "required")
+                datatime()
+            } else if (data.index === 2) {
+                $("#trigger").val("cron")
+                $(".layui-tab input").attr("lay-verify", "")
+                $("#cron").attr("lay-verify", "required")
+            }
+        });
+
+        function datatime() {
+            laydate.render({
+                elem: '#date',
+                type: 'datetime',
+                min: 0,
+            });
+        }
+
+        form.on('select(rst_notify.mode)', function (data) {
+            if (data.value === '0') {
+                $("#rst_notify").attr({"disabled": true, "lay-verify": ""})
+            } else {
+                $("#rst_notify").attr({"disabled": false, 'lay-verify': "required"})
+            }
+        });
+
+        var tableSelect = layui.tableSelect;
+        step.render({
+            elem: '#stepForm',
+            filter: 'stepForm',
+            width: '100%', //设置容器宽度
+            {#stepWidth: '750px',#}
+            height: '700px',
+            stepItems: [{
+                title: '创建任务'
+            }, {
+                title: '执行对象'
+            }, {
+                title: '设置规则'
+            }]
+        });
+        form.on('submit(next1)', function () {
+            step.next('#stepForm');
+            $("#hostname").attr("lay-verify", "required")
+        });
+        $('#pre1.pre').click(function () {
+            $("#hostname").attr("lay-verify", "")
+            step.pre('#stepForm');
+        });
+
+        form.on('submit(next2)', function () {
+            $("#interval").attr("lay-verify", "required")
+            step.next('#stepForm');
+        });
+        $('#pre2.pre').click(function () {
+            $(".layui-tab input").attr("lay-verify", "")
+            step.pre('#stepForm');
+        });
+
+        $.ajax({
+            id: 'formReload',
+            type: "get",
+            url: "{% url 'exec:schedule_type' %}",
+            async: false,
+            success: function (res) {
+                if (res.code === 0) {
+                    for (let index in res.data) {
+                        types = res.data[index];
+                        $("#types").append('<option value=' + types + '>' + types + '</option>')
+                    }
+                    if (did === "") {
+                        $("#types").val(res.data[0])
+                    } else {
+                        $("#types").val("{{ data.types }}")
+                    }
+                }
+            },
+            error: function () {
+                layer.msg("服务器接口异常！", {icon: 5})
+            }
+        });
+
+        form.render();
+        var parentIndex = layer.index;
+        form.on('submit(saveBtn)', function (data) {
+            data = data.field
+            data['command'] = yaml.getValue();
+            layer.confirm('是否确认添加', {
+                btn: ['确认', '关闭'] //按钮
+            }, function (index, layero) {
+                $.ajax({
+                    url: "{% url "exec:schedule_edit" %}",
+                    type: "post",
+                    data: data,
+                    success: function (res) {
+                        if (res.code === 0) {
+                            layer.msg(res.msg, {icon: 6});
+                            parent.layui.table.reload("testReload");
+                        } else {
+                            layer.msg(res.msg, {icon: 5});
+                        }
+                        layer.close(parentIndex);
+                    }
+                });
+            });
+        });
+        layui.$('#addtype').on('click', function () {
+            layer.prompt({title: '添加任务类别', formType: 3}, function (types, index) {
+                $.ajax({
+                    url: "{% url "exec:schedule_type" %}",
+                    type: "post",
+                    data: {"types": types},
+                    headers: {"X-CSRFToken": csrf_token},
+                    success: function (res) {
+                        if (res.code === 0) {
+                            layer.msg(res.msg, {icon: 6});
+                            $("#types").append('<option value=' + types + '>' + types + '</option>')
+                        } else {
+                            layer.msg(res.msg, {icon: 5});
+                        }
+                        $("#types").val(types)
+                        form.render();
+                        layer.close(index)
+                    }
+                });
+            });
+            return false;
+        });
+        layui.$('#edittype').on('click', function () {
+            var name = $("#types").val();
+            layer.prompt({title: '修改任务类别', formType: 3, value: name}, function (types, index) {
+                $.ajax({
+                    url: "{% url "exec:schedule_type" %}",
+                    type: "put",
+                    data: {"name": name, "types": types},
+                    headers: {"X-CSRFToken": csrf_token},
+                    success: function (res) {
+                        if (res.code === 0) {
+                            layer.msg(res.msg, {icon: 6});
+                            $("#types option[value=" + name + "]").remove();
+                            $("#types").append('<option value=' + types + '>' + types + '</option>')
+                            $("#types").val(types)
+                            parent.layui.table.reload("testReload");
+                        } else {
+                            layer.msg(res.msg, {icon: 5});
+                            $("#types").val(name)
+                        }
+                        form.render();
+                        layer.close(index)
+                    }
+                });
+            });
+            return false;
+        });
+        tableSelect.render({
+            elem: '#hostname',	//定义输入框input对象 必填
+            checkedKey: 'id', //表格的唯一建值，非常重要，影响到选中状态 必填
+            searchKey: 'hostname',	//搜索输入框的name值 默认keyword
+            searchPlaceholder: '关键词搜索',	//搜索输入框的提示文字 默认关键词搜索
+
+            table: {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                url: '{% url 'host:get_host' %}',
+                request: {
+                    pageName: 'pageIndex',  // 页码的参数名称，默认：page
+                    limitName: 'pageSize'   // 每页数据量的参数名，默认：limit
+                },
+                response: {
+                    statusName: 'code',     // 规定数据状态的字段名称，默认：code
+                    statusCode: 0,          // 规定成功的状态码，默认：0
+                    msgName: 'msg',         // 规定状态信息的字段名称，默认：msg
+                    countName: 'DataCount', // 规定数据总数的字段名称，默认：count
+                    dataName: 'data'        // 规定数据列表的字段名称，默认：data
+                },
+                cols: [[
+                    {type: 'checkbox'},
+                    {field: 'id', title: 'No', width: 50, align: 'center'},
+                    {field: 'types', title: '类别', sort: true},
+                    {field: 'name', title: '主机名称'},
+                    {
+                        field: 'system', title: '系统', width: 60, align: 'center', templet: function (d) {
+                            if (d.system === '1') {
+                                return '<i class="fa fa-linux"></i>'
+                            } else if (d.system === '2') {
+                                return '<i class="fa fa-windows"></i>'
+                            } else {
+                                return d.system
+                            }
+                        }
+                    },
+                    {field: 'hostname', title: '主机IP'},
+                ]],
+                page: {
+                    layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'],     // 自定义分页布局
+                    curr: 1,      // 设置默认起始页1
+                    groups: 10,   //只显示10个连续页码,就是说显示10个可见页其他的省略
+                    first: "首页", // 不显示首页
+                    last: "尾页"   // 不显示尾页
+                },
+                limit: 10,
+                limits: [10, 50, 100],
+            },
+            done: function (elem, data) {
+                var NEWJSON = []
+                layui.each(data.data, function (index, item) {
+                    NEWJSON.push(item.hostname)
+                })
+                $("#hostname").val(NEWJSON.join(","))
+            }
+        })
+    })
+    ;
+</script>

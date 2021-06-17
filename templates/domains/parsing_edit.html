@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+    <style>
+        .layui-form-item .layui-input-company {
+            width: auto;
+            padding-right: 10px;
+            line-height: 38px;
+        }
+
+        .layui-upload-img {
+            width: 92px;
+            height: 92px;
+            margin: 0 10px 10px 0;
+        }
+
+        .layui-tree-set-active > .layui-tree-entry .layui-tree-main {
+            background: #f2f2f2;
+        }
+    </style>
+    <div class="layui-card-body">
+
+        <div class="layui-form layuimini-form" lay-filter="example">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ data.id }}">
+            <input type="hidden" name="RecordId" value="{{ data.RecordId }}">
+            <div class="layui-form-item">
+                <label class="layui-form-label required">记录类型:</label>
+                <div class="layui-input-block">
+                    <select id="Type" name="Type" lay-verify="required" lay-search="" lay-filter="Type">
+                        <option value="A" {% if data.Type == "A" or not data.Type %}selected{% endif %}>A-将域名指向一个IPV4地址</option>
+                        <option value="CNAME" {% if data.Type == "CNAME" %}selected{% endif %}>CNAME-将域名指向另外一个域名</option>
+                        <option value="AAAA" {% if data.Type == "AAAA" %}selected{% endif %}>AAAA-将域名指向一个IPV6地址</option>
+                        <option value="MX" {% if data.Type == "MX" %}selected{% endif %}>MX-将域名指向邮件服务器地址</option>
+                        <option value="TXT" {% if data.Type == "TXT" %}selected{% endif %}>TXT-文本长度限制512</option>
+                    </select>
+                </div>
+            </div>
+            <br>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">主机记录:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="RR" name="RR" lay-verify="required" lay-reqtext=""
+                           placeholder="" value="{{ data.RR }}" class="layui-input">
+                </div>
+                <br>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">解析域名:</label>
+                <div class="layui-input-block">
+                    <select name="domain" lay-verify="required" lay-search="" {% if data.domain.domain %}
+                            disabled {% endif %}>
+                        {% for i in domain %}
+                            <option value={{ i.id }} {% if data.domain.domain == i.domain %}
+                                    selected {% endif %}>{{ i.domain }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <br>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">解析线路:</label>
+                <div class="layui-input-block">
+                    <select name="Line" lay-verify="required" lay-search="">
+                        <option value="default">默认</option>
+                        <option value="telecom">电信</option>
+                        <option value="unicom">联通</option>
+                        <option value="mobile">移动</option>
+                        <option value="oversea">海外</option>
+                        <option value="edu">教育网</option>
+                        <option value="drpeng">鹏博士</option>
+                        <option value="btvn">广电网</option>
+                    </select>
+                </div>
+                <br>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">解析地址:</label>
+                <div class="layui-input-block">
+                    <input type="text" name="Value" lay-verify="required" lay-reqtext="地址不能为空"
+                           placeholder="请输入解析地址" value="{{ data.Value }}" class="layui-input">
+                </div>
+                <br>
+            </div>
+            <div class="layui-form-item" id="mx" style="display:none;">
+                <label class="layui-form-label required">MX优先级:</label>
+                <div class="layui-input-block" id="mx_input">
+                </div>
+                <br>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">TTL:</label>
+                <div class="layui-input-block">
+                    <select name="TTL" lay-verify="required" lay-search="">
+                        <option value="600">10分钟</option>
+                        <option value="1800">30分钟</option>
+                        <option value="3600">1小时</option>
+                        <option value="7800">12小时</option>
+                        <option value="14400">1天</option>
+                    </select>
+                </div>
+                <br>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">
+                        确认保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        layui.use(['form', 'miniPage', 'tree', 'util'], function () {
+            var form = layui.form,
+                layer = layui.layer,
+                $ = layui.jquery;
+            var csrf_token = $('[name="csrfmiddlewaretoken"]').val();
+            form.val('example', {
+                "line": "{{ data.Line }}",
+                "ttl": "{{ data.TTL }}"
+            });
+            var type = $("#Type").val()
+            if (type === "MX") {
+                document.getElementById("mx").style.display = "block"; //显示
+                document.getElementById('mx_input').innerHTML =
+                    "<input type='text' name='Priority' lay-verify='required' lay-reqtext='MX优先级不能为空'" +
+                    "placeholder='请输入MX优先级' value={{ data.Priority }} class='layui-input'>"
+            }
+            form.on('select(Type)', function (data) {
+                if (data.value === "MX") {
+                    document.getElementById("mx").style.display = "block"; //显示
+                    document.getElementById('mx_input').innerHTML =
+                        "<input type='text' name='Priority' lay-verify='required' lay-reqtext='MX优先级不能为空'" +
+                        "placeholder='请输入MX优先级' value={% if not data.Priority %}10{% else %}{{ data.Priority }}{% endif %} class='layui-input'>"
+                } else {
+                    document.getElementById("mx").style.display = "none"; //隐藏
+                    document.getElementById('mx_input').innerHTML = ""
+                }
+            });
+            form.render();
+            //监听提交
+            var parentIndex = layer.index;
+            form.on('submit(saveBtn)', function (data) {
+                data = data.field
+                layer.confirm('是否确认新建接口', {
+                    btn: ['确认', '关闭'] //按钮
+                }, function (index, layero) {
+                    $.ajax({
+                        url: "{% url "domains:parsing_edit" %}",
+                        type: "post",
+                        data: data,
+                        success: function (result) {
+                            if (result.code === 0) {
+                                layer.msg(result.msg, {icon: 6});
+                                parent.layui.table.reload("testReload");
+                                layer.close(parentIndex);
+                            } else {
+                                layer.msg(result.msg, {icon: 6});
+                                parent.layui.table.reload("testReload");
+                                layer.close(parentIndex);
+                            }
+                        }
+                    });
+                });
+            });
+            return false;
+        });
+    </script>
+{% endblock content %}

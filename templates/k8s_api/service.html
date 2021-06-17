@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+    <div class="layuimini-container layuimini-page-anim">
+        <div class="layuimini-main">
+
+            <fieldset class="table-search-fieldset">
+                <legend>搜索信息</legend>
+                <div class="layui-col-md12" style="margin: 10px 10px 10px 10px">
+                    <form class="layui-form layui-form-pane">
+                        {% csrf_token %}
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">K8S</label>
+                                <div class="layui-input-inline">
+                                    <select name="hostname" id="k8s" lay-filter="hostname"></select>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">命名空间</label>
+                                <div class="layui-input-inline">
+                                    <select name="namespace" id="nsSelect" lay-filter="namespace"></select>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">名称</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="name" autocomplete="off" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">Pod标签</label>
+                                <div class="layui-input-inline">
+                                    <select name="system" lay-search="">
+                                        <option value="">全部</option>
+                                        {% for i in system %}
+                                            <option value="{{ i }}">{% if i == '1' %}Linux{% elif i == '2' %}
+                                                Windows{% else %}{{ i }}{% endif %}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <button type="submit" class="layui-btn layui-btn-primary" lay-submit
+                                        lay-filter="data-search-btn">搜 索
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </fieldset>
+
+            <script type="text/html" id="toolbarDemo">
+                <div class="layui-btn-container">
+                    <button class="layui-btn layui-btn-normal layui-btn-sm data-add-btn" lay-event="add">添加用户</button>
+                    <button class="layui-btn layui-btn-sm layui-btn-danger data-delete-btn" lay-event="import">YAML导入
+                    </button>
+                </div>
+            </script>
+
+            <table class="layui-hide" id="demo" lay-filter="currentTableFilter"></table>
+
+            <script type="text/html" id="barDemo">
+                <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+                <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="yaml">YAML</a>
+                <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+            </script>
+
+        </div>
+    </div>
+    <script>
+        layui.use(['form', 'table', 'miniPage', 'element'], function () {
+            var $ = layui.jquery,
+                form = layui.form,
+                table = layui.table,
+                miniPage = layui.miniPage;
+            var storage = window.sessionStorage;
+            var resource = "service"
+            hostname = storage.getItem("hostname");
+            namespace = storage.getItem("namespace");
+
+            $.ajax({
+                type: "get",
+                url: "{% url 'k8s:get_k8s' %}?hostname=" + hostname,
+                async: false,
+                success: function (res) {
+                    if (res.code === 0) {
+                        for (let index in res.hostname) {
+                            row = res.hostname[index];
+                            $("#k8s").append('<option value=' + row.hostname + '>' + row.hostname + '</option>')
+                        }
+                        $("#k8s").val(res.hostname[0].hostname)
+                        for (let index in res.namespace) {
+                            rew = res.namespace[index];
+                            $("#nsSelect").append('<option value=' + rew.name + '>' + rew.name + '</option>')
+                        }
+                        $("#nsSelect").val("default")
+                    }
+                },
+                error: function () {
+                    layer.msg("服务器接口异常！", {icon: 5})
+                }
+            });
+
+            if (hostname == null) {
+                var k8s_host = $("#k8s").val();
+                storage.setItem('hostname', k8s_host)
+                var hostname = storage.getItem("hostname");
+            } else {
+                $("#k8s").val(hostname)
+            }
+
+            if (namespace == null) {
+                var k8s_ns = $("#nsSelect").val();
+                storage.setItem('namespace', k8s_ns)
+                var namespace = storage.getItem("namespace");
+            } else {
+                $("#nsSelect").val(namespace)
+            }
+
+            form.on('select(hostname)', function (data) {
+                k8s_host = data.value;
+                storage.setItem('hostname', k8s_host);
+                hostname = storage.getItem("hostname");
+                namespace = storage.getItem("namespace")
+                $("#nsSelect").find('option').remove();
+                $.ajax({
+                    type: "get",
+                    url: "{% url 'k8s_api:get_namespace' %}?hostname=" + hostname,
+                    async: false,
+                    success: function (res) {
+                        if (res.code === 0) {
+                            var namesp = new Array();
+                            for (let index in res.data) {
+                                rew = res.data[index];
+                                $("#nsSelect").append('<option value=' + rew.name + '>' + rew.name + '</option>')
+                                namesp.push(rew.name)
+                            }
+                            if (namesp.indexOf(namespace) != -1) {
+                                $("#nsSelect").val(namespace)
+                            } else {
+                                $("#nsSelect").val("default")
+                                storage.setItem('namespace', "default");
+                            }
+                        }
+                    },
+                    error: function () {
+                        layer.msg("服务器接口异常！", {icon: 5})
+                    }
+                });
+                form.render();
+                table.reload('testReload', {url: '{% url "k8s_api:get_service" %}?hostname=' + hostname + '&namespace=' + namespace,})
+            });
+
+            form.on('select(namespace)', function (data) {
+                k8s_ns = data.value;
+                storage.setItem('namespace', k8s_ns);
+                namespace = storage.getItem("namespace");
+                table.reload('testReload', {url: '{% url "k8s_api:get_service" %}?hostname=' + hostname + '&namespace=' + namespace,})
+            });
+
+            form.render();
+
+            table.render({
+                elem: '#demo',
+                id: 'testReload',
+                height: 'full-264', //容器高度
+                url: '{% url "k8s_api:get_service" %}?hostname=' + hostname + '&namespace=' + namespace,
+                method: 'get',
+                toolbar: '#toolbarDemo',
+                request: {
+                    pageName: 'pageIndex',  // 页码的参数名称，默认：page
+                    limitName: 'pageSize'   // 每页数据量的参数名，默认：limit
+                },
+                response: {
+                    statusName: 'code',     // 规定数据状态的字段名称，默认：code
+                    statusCode: 0,          // 规定成功的状态码，默认：0
+                    msgName: 'msg',         // 规定状态信息的字段名称，默认：msg
+                    countName: 'DataCount', // 规定数据总数的字段名称，默认：count
+                    dataName: 'data'        // 规定数据列表的字段名称，默认：data
+                },
+                cols: [[
+                    {type: 'checkbox'},
+                    {field: 'name', title: '名称', sort: true},
+                    {field: 'namespace', title: '命名空间'},
+                    {field: 'type', title: '类型', width: 120, sort: true},
+                    {field: 'cluster_ip', title: '集群IP', width: 150},
+                    {field: 'ports', title: '端口信息', templet: portsFormat},
+                    {field: 'labels', title: '标签', templet: labelsFormat},
+                    {field: 'selector', title: 'Pod 标签选择器', templet: selecotrFormat},
+                    {field: 'endpoint', title: '后端 Pod', width: 100},
+                    {field: 'create_time', title: '创建时间', width: 180},
+                    {fixed: 'right', title: '操作', toolbar: '#barDemo', width: 180, align: 'center'},
+                ]],
+                page: {
+                    layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'],     // 自定义分页布局
+                    curr: 1,      // 设置默认起始页1
+                    groups: 10,   //只显示10个连续页码,就是说显示10个可见页其他的省略
+                    first: "首页", // 不显示首页
+                    last: "尾页"   // 不显示尾页
+                },
+                limit: 50,
+                limits: [50, 100, 10000],
+            });
+
+            // 标签格式化，是一个对象
+            function labelsFormat(d) {
+                result = "";
+                if (d.labels == null) {
+                    return "None"
+                } else {
+                    for (let key in d.labels) {
+                        result += '<span style="border: 1px solid #d6e5ec;border-radius: 8px">' +
+                            key + ':' + d.labels[key] +
+                            '</span><br>'
+                    }
+                    return result
+                }
+            }
+
+            function selecotrFormat(d) {
+                result = "";
+                for (let key in d.selector) {
+                    result += '<span style="border: 1px solid #d6e5ec;border-radius: 8px">' +
+                        key + ':' + d.selector[key] +
+                        '</span><br>'
+                }
+                return result
+            }
+
+            function portsFormat(d) {
+                result = "";
+                for (let key in d.ports) {
+                    data = d.ports[key];
+                    result += '名称: ' + data.port_name + '<br>' +
+                        '端口: ' + data.port + '<br>' +
+                        '协议: ' + data.protocol + '<br>' +
+                        '容器端口: ' + data.target_port + '<br>'
+                }
+                return result
+            }
+
+            // 监听搜索操作
+            form.on('submit(data-search-btn)', function (data) {
+                data = data.field
+                //执行搜索重载
+                table.reload('testReload', {
+                    url: "/",
+                    page: {
+                        curr: 1,
+                        limits: [1]
+                    }
+                    , where: {
+                        zone: data.zone,
+                        name: data.name,
+                        system: data.system,
+                        hostname: data.hostname,
+                    }
+                });
+                return false;
+            });
+
+            /**
+             * toolbar事件监听
+             */
+
+            table.on('toolbar(currentTableFilter)', function (obj) {
+                if (obj.event === 'add') {   // 监听添加操作
+                    var content = miniPage.getHrefContent('{% url 'domains:parsing_edit' %}');
+                    var index = layer.open({
+                        title: '添加记录',
+                        type: 1,
+                        shade: 0.2,
+                        {#maxmin: true,#}
+                        shadeClose: true,
+                        anim: 2,
+                        area: ['500px', '100%'],
+                        offset: 'r',
+                        content: content,
+                    });
+                    $(window).on("resize", function () {
+                        layer.full(index);
+                    });
+                } else if (obj.event === 'import') {  // 监听删除操作
+                    var namespace = storage.getItem("namespace");
+                    var getdata = '?hostname=' + hostname + '&namespace=' + namespace + '&name=' + data.name + '&resource=' + resource
+                    var yaml_edit = miniPage.getHrefContent('{% url 'k8s_api:yaml_edit' %}' + getdata + '&types=yaml');
+                    var json_edit = miniPage.getHrefContent('{% url 'k8s_api:json_edit' %}' + getdata + '&types=json');
+                    layer.tab({
+                        area: ['800px', '500px'],
+                        shade: 0.2,
+                        shadeClose: true,
+                        tab: [{
+                            title: 'YAML',
+                            type: 1,
+                            content: yaml_edit
+                        }, {
+                            title: 'JSON',
+                            type: 1,
+                            content: json_edit
+                        }]
+                    });
+                }
+            });
+
+            //监听表格复选框选择
+            table.on('checkbox(currentTableFilter)', function (obj) {
+
+            });
+            form.on('checkbox(lockDemo)', function (obj) {
+                $.ajax({
+                    url: "{% url 'user:active' %}",
+                    type: "post",
+                    data: {
+                        'id': this.value,
+                        'is_active': obj.elem.checked,
+                        'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val(),
+                    },
+                    success: function (recv) {
+                        if (recv.code === 0) {
+                            layer.msg(recv.msg, {icon: 6});
+                        } else if (recv.code === 1) {
+                            layer.msg(recv.msg, {icon: 6});
+                        }
+
+                    }
+                })
+            });
+            table.on('tool(currentTableFilter)', function (obj) {
+                var data = obj.data;
+                if (obj.event === 'edit') {
+                    var content = miniPage.getHrefContent('');
+                    var openWH = miniPage.getOpenWidthHeight();
+
+                    var index = layer.open({
+                        title: '修改用户信息',
+                        type: 1,
+                        shade: 0.2,
+                        maxmin: true,
+                        shadeClose: true,
+                        area: '800px',
+                        offset: 'auto',
+                        {#area: [openWH[0] + 'px', openWH[1] + 'px'],#}
+                        {#offset: [openWH[2] + 'px', openWH[3] + 'px'],#}
+                        content: content,
+                    });
+                    $(window).on("resize", function () {
+                        layer.full(index);
+                    });
+                } else if (obj.event === 'del') {
+                    layer.confirm('真的要删除' + data["name"] + "这个Services吗？", {icon: 3, anim: 2}, function (index) {
+                        csrf_token = $('[name="csrfmiddlewaretoken"]').val();
+                        $.ajax({
+                            url: '{% url 'k8s_api:get_service' %}?namespace=' + namespace,
+                            type: "DELETE",
+                            data: data,
+                            headers: {"X-CSRFToken": csrf_token},
+                            success: function (res) {
+                                if (res.code === 0) {
+                                    layer.msg(res.msg, {icon: 6});
+                                    obj.del()
+                                } else {
+                                    layer.msg(res.msg, {icon: 5})
+                                }
+                            },
+                            error: function () {
+                                layer.msg("服务器接口异常", {icon: 5})
+                            }
+                        })
+
+                    });
+                } else if (obj.event === 'yaml') {   // 监听添加操作
+                    var namespace = storage.getItem("namespace");
+                    var getdata = '?hostname=' + hostname + '&namespace=' + namespace + '&name=' + data.name + '&resource=' + resource
+                    var yaml = miniPage.getHrefContent('{% url 'k8s_api:yaml_edit' %}' + getdata);
+                    var json = miniPage.getHrefContent('{% url 'k8s_api:json_edit' %}' + getdata);
+                    layer.tab({
+                        area: ['800px', 'auto'],
+                        shade: 0.2,
+                        shadeClose: true,
+                        tab: [{
+                            title: 'YAML',
+                            type: 1,
+                            content: yaml
+                        }, {
+                            title: 'JSON',
+                            type: 1,
+                            content: json
+                        }]
+                    });
+                }
+            });
+        });
+    </script>
+{% endblock content %}

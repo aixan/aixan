@@ -1,0 +1,185 @@
+<div class="layui-card-body">
+    <div class="layui-form" lay-filter="example">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ data.id }}">
+        <div class="layui-form-item">
+            <label class="layui-form-label">K8S名称：</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" lay-verify="required" placeholder="请输入K8S名称" value="{{ data.name }}"
+                       class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">K8S IP：</label>
+            <div class="layui-input-block">
+                <input type="text" name="hostname" id="hostname" placeholder="请选择k8s"
+                       value="{{ data.hostname.hostname }}" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-row layui-col-space10 layui-form-item">
+            <div class="layui-col-lg9">
+                <label class="layui-form-label">集群CA：</label>
+                <div class="layui-input-block">
+                    <input type="text" name="ca" id="ca" lay-verify="required" placeholder="请上传CA证书"
+                           value="{{ data.ca }}" class="layui-input" disabled>
+                </div>
+            </div>
+            <div class="layui-col-lg3">
+                <button type="button" class="layui-btn" id="cafile"><i class="layui-icon"></i>上传文件</button>
+            </div>
+        </div>
+        <div class="layui-row layui-col-space10 layui-form-item">
+            <div class="layui-col-lg9">
+                <label class="layui-form-label">集群config：</label>
+                <div class="layui-input-block">
+                    <input type="text" name="config" id="config" lay-verify="required" placeholder="请上传config"
+                           value="{{ data.config }}" class="layui-input" disabled>
+                </div>
+            </div>
+            <div class="layui-col-lg3">
+                <button type="button" class="layui-btn" id="configfile"><i class="layui-icon"></i>上传文件</button>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注信息：</label>
+            <div class="layui-input-block">
+                <textarea name="desc" placeholder="请输入备注信息"
+                          class="layui-textarea">{{ data.desc  | default_if_none:"" }}</textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button type="submit" class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">立即提交</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['form', 'table', 'tableSelect', 'upload'], function () {
+        var form = layui.form,
+            layer = layui.layer,
+            table = layui.table,
+            upload = layui.upload,
+            $ = layui.$;
+        var tableSelect = layui.tableSelect;
+
+        tableSelect.render({
+            elem: '#hostname',	//定义输入框input对象 必填
+            checkedKey: 'id', //表格的唯一建值，非常重要，影响到选中状态 必填
+            searchKey: 'hostname',	//搜索输入框的name值 默认keyword
+            searchPlaceholder: '关键词搜索',	//搜索输入框的提示文字 默认关键词搜索
+
+            table: {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                url: '{% url 'host:get_host' %}',
+                request: {
+                    pageName: 'pageIndex',  // 页码的参数名称，默认：page
+                    limitName: 'pageSize'   // 每页数据量的参数名，默认：limit
+                },
+                response: {
+                    statusName: 'code',     // 规定数据状态的字段名称，默认：code
+                    statusCode: 0,          // 规定成功的状态码，默认：0
+                    msgName: 'msg',         // 规定状态信息的字段名称，默认：msg
+                    countName: 'DataCount', // 规定数据总数的字段名称，默认：count
+                    dataName: 'data'        // 规定数据列表的字段名称，默认：data
+                },
+                cols: [[
+                    {type: 'radio'},
+                    {field: 'id', title: 'No', width: 50, align: 'center'},
+                    {field: 'types', title: '类别', sort: true},
+                    {field: 'name', title: '主机名称'},
+                    {
+                        field: 'system', title: '系统', width: 60, align: 'center', templet: function (d) {
+                            if (d.system === '1') {
+                                return '<i class="fa fa-linux"></i>'
+                            } else if (d.system === '2') {
+                                return '<i class="fa fa-windows"></i>'
+                            } else {
+                                return d.system
+                            }
+                        }
+                    },
+                    {field: 'hostname', title: '主机IP'},
+                ]],
+                page: {
+                    layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'],     // 自定义分页布局
+                    curr: 1,      // 设置默认起始页1
+                    groups: 10,   //只显示10个连续页码,就是说显示10个可见页其他的省略
+                    first: "首页", // 不显示首页
+                    last: "尾页"   // 不显示尾页
+                },
+                limit: 50,
+                limits: [50, 100, 10000],
+            },
+            done: function (elem, data) {
+                var NEWJSON = []
+                layui.each(data.data, function (index, item) {
+                    NEWJSON.push(item.hostname)
+                })
+                elem.val(NEWJSON.join(","))
+            }
+        })
+        /**
+         * 初始化表单，要加上，不然刷新部分组件可能会不加载
+         */
+        csrf_token = $('[name="csrfmiddlewaretoken"]').val();
+        upload.render({ //允许上传的文件后缀
+            elem: '#cafile',
+            url: '{% url 'k8s:add_ca' %}', //改成您自己的上传接口
+            accept: 'file', //普通文件
+            exts: 'crt', //只允许上传压缩文件
+            headers: {"X-CSRFToken": csrf_token},
+            done: function (res) {
+                if (res.code === 0) {
+                    layer.msg('上传成功');
+                    form.val('example', {
+                        "ca": res.data
+                    });
+                }
+            }
+        });
+        upload.render({ //允许上传的文件后缀
+            elem: '#configfile',
+            url: '{% url 'k8s:add_config' %}', //改成您自己的上传接口
+            accept: 'file', //普通文件
+            headers: {"X-CSRFToken": csrf_token},
+            done: function (res) {
+                if (res.code === 0) {
+                    layer.msg('上传成功');
+                    form.val('example', {
+                        "config": res.data
+                    });
+                }
+            }
+        });
+
+        form.render();
+        // 当前弹出层，防止ID被覆盖
+        var parentIndex = layer.index;
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            data = data.field
+            layer.confirm('是否确认编辑', {
+                btn: ['确认', '关闭'] //按钮
+            }, function (index, layero) {
+                $.ajax({
+                    url: "{% url 'k8s:edit_k8s' %}",
+                    type: "post",
+                    data: data,
+                    success: function (result) {
+                        if (result.code === 0) {
+                            layer.msg(result.msg, {icon: 6});
+                            parent.layui.table.reload("testReload");
+                        } else {
+                            layer.msg(result.msg, {icon: 5});
+
+                        }
+                    }
+                });
+                layer.close(index);
+                layer.close(parentIndex);
+            });
+        });
+        return false;
+    });
+</script>

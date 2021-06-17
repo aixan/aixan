@@ -1,0 +1,194 @@
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main">
+        <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+            <legend>执行任务</legend>
+        </fieldset>
+        <div class="layui-form layuimini-form">
+            {% csrf_token %}
+            <div class="layui-form-item">
+                <label class="layui-form-label required">执行主机</label>
+                <div class="layui-input-block">
+                    <input type="text" id="host" name="host" lay-verify="required" lay-reqtext="主机不能为空"
+                           placeholder="请选择主机"
+                           value="" class="layui-input" disabled>
+                    <tip>选择执行任务的主机。</tip>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button type="button" class="layui-btn layui-btn-normal" id="addhost">选择主机</button>
+                    <button type="button" class="layui-btn layui-btn-normal" id="template">选择模板</button>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">执行命令</label>
+                <div class="layui-input-block">
+                    <div id="yaml-edit" style="height: 400px;width: 99%;">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn layui-btn-normal" lay-submit lay-filter="setting">
+                        <i class="fa fa-bolt"></i>&emsp;开始执行
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/static/layuimini/js/lay-module/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+    var yaml = ace.edit("yaml-edit")
+    //设置编辑器样式，对应theme-*.js文件
+    yaml.setTheme("ace/theme/chrome");
+    //设置代码语言，对应mode-*.js文件
+    yaml.session.setMode("ace/mode/yaml");
+    //设置打印线是否显示
+    yaml.setShowPrintMargin(false);
+    //字体大小
+    yaml.setFontSize(16);
+    //自动换行
+    yaml.setOption("wrap", true)
+    //设置只读（true时只读，用于展示代码）
+    yaml.setValue("");
+
+    layui.use(['element', 'form', 'tableSelect', 'miniPage'], function () {
+        var element = layui.element;
+        var form = layui.form,
+            $ = layui.jquery;
+        miniPage = layui.miniPage;
+        /**
+         * 初始化表单，要加上，不然刷新部分组件可能会不加载
+         */
+        var tableSelect = layui.tableSelect;
+        form.render();
+
+        //监听提交
+        form.on('submit(setting)', function (data) {
+            data = data.field
+            data['host'] = (data.host).split(",")
+            data['exec'] = yaml.getValue();
+            json = data;
+            var content = miniPage.getHrefContent("{% url 'webssh:exec' %}?host=" + data.host);
+            var index = layer.open({
+                title: '执行终端',
+                type: 1,
+                shade: 0.2,
+                {#maxmin: true,#}
+                shadeClose: true,
+                area: "800px",
+                offset: '10%',
+                maxHeight: "1000px" ,
+                {#content: ["{% url 'webssh:exec' %}?host=" + data.host],#}
+                content: content,
+                {#success: function(layero, index){#}
+                {#    layer.iframeAuto(index)#}
+            });
+            $(window).on("resize", function () {
+                layer.full(index);
+            });
+        });
+        tableSelect.render({
+            elem: '#addhost',	//定义输入框input对象 必填
+            checkedKey: 'id', //表格的唯一建值，非常重要，影响到选中状态 必填
+            searchKey: 'hostname',	//搜索输入框的name值 默认keyword
+            searchPlaceholder: '关键词搜索',	//搜索输入框的提示文字 默认关键词搜索
+
+            table: {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                url: '{% url 'host:get_host' %}',
+                request: {
+                    pageName: 'pageIndex',  // 页码的参数名称，默认：page
+                    limitName: 'pageSize'   // 每页数据量的参数名，默认：limit
+                },
+                response: {
+                    statusName: 'code',     // 规定数据状态的字段名称，默认：code
+                    statusCode: 0,          // 规定成功的状态码，默认：0
+                    msgName: 'msg',         // 规定状态信息的字段名称，默认：msg
+                    countName: 'DataCount', // 规定数据总数的字段名称，默认：count
+                    dataName: 'data'        // 规定数据列表的字段名称，默认：data
+                },
+                cols: [[
+                    {type: 'checkbox'},
+                    {field: 'id', title: 'No', width: 50, align: 'center'},
+                    {field: 'types', title: '类别', sort: true},
+                    {field: 'name', title: '主机名称'},
+                    {
+                        field: 'system', title: '系统', width: 60, align: 'center', templet: function (d) {
+                            if (d.system === '1') {
+                                return '<i class="fa fa-linux"></i>'
+                            } else if (d.system === '2') {
+                                return '<i class="fa fa-windows"></i>'
+                            } else {
+                                return d.system
+                            }
+                        }
+                    },
+                    {field: 'hostname', title: '主机IP'},
+                ]],
+                page: {
+                    layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'],     // 自定义分页布局
+                    curr: 1,      // 设置默认起始页1
+                    groups: 10,   //只显示10个连续页码,就是说显示10个可见页其他的省略
+                    first: "首页", // 不显示首页
+                    last: "尾页"   // 不显示尾页
+                },
+                limit: 10,
+                limits: [10, 50, 100],
+            },
+            done: function (elem, data) {
+                var NEWJSON = []
+                layui.each(data.data, function (index, item) {
+                    NEWJSON.push(item.hostname)
+                })
+                $("#host").val(NEWJSON.join(","))
+            }
+        })
+        tableSelect.render({
+            elem: '#template',	//定义输入框input对象 必填
+            checkedKey: 'id', //表格的唯一建值，非常重要，影响到选中状态 必填
+            searchKey: 'name',	//搜索输入框的name值 默认keyword
+            searchPlaceholder: '关键词搜索',	//搜索输入框的提示文字 默认关键词搜索
+
+            table: {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                url: '{% url 'exec:template_get' %}',
+                request: {
+                    pageName: 'pageIndex',  // 页码的参数名称，默认：page
+                    limitName: 'pageSize'   // 每页数据量的参数名，默认：limit
+                },
+                response: {
+                    statusName: 'code',     // 规定数据状态的字段名称，默认：code
+                    statusCode: 0,          // 规定成功的状态码，默认：0
+                    msgName: 'msg',         // 规定状态信息的字段名称，默认：msg
+                    countName: 'DataCount', // 规定数据总数的字段名称，默认：count
+                    dataName: 'data'        // 规定数据列表的字段名称，默认：data
+                },
+                cols: [[
+                    {type: 'checkbox'},
+                    {field: 'id', title: 'No', sort: true, hide: true},
+                    {field: 'name', title: '模版名称', sort: true},
+                    {field: 'types', title: '模版类型'},
+                    {field: 'body', title: '模版内容', hide: true},
+                    {field: 'desc', title: '备注', sort: true},
+                ]],
+                page: {
+                    layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'],     // 自定义分页布局
+                    curr: 1,      // 设置默认起始页1
+                    groups: 10,   //只显示10个连续页码,就是说显示10个可见页其他的省略
+                    first: "首页", // 不显示首页
+                    last: "尾页"   // 不显示尾页
+                },
+                limit: 10,
+                limits: [10, 50, 100],
+            },
+            done: function (elem, data) {
+                var NEWJSON = []
+                layui.each(data.data, function (index, item) {
+                    NEWJSON.push(item.body)
+                })
+                yaml.setValue(NEWJSON.join(","))
+            }
+        })
+        return false;
+    });
+</script>

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+    <div class="layui-card-body">
+
+        <div class="layui-form layuimini-form">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ data.id }}">
+            <div class="layui-form-item">
+                <label class="layui-form-label required">名称:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="name" name="name" lay-verify="required" lay-reqtext="名称不能为空"
+                           placeholder="请输入名称" value="{{ data.name }}" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label required">云厂商:</label>
+                <div class="layui-input-block">
+                    <select name="cloud" lay-verify="required" lay-search="">
+                        <option value="1">阿里云</option>
+                        <option value="2" disabled>腾讯云</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">区域:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="region" name="region" lay-verify="required"
+                           lay-reqtext="区域不能为空" placeholder="请输入区域" value="{{ data.region }}" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">Key:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="key" name="key" lay-verify="required"
+                           lay-reqtext="Key不能为空" placeholder="请输入Key" value="{{ data.key }}" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">Secret:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="secret" name="secret" lay-verify="required"
+                           lay-reqtext="Secret不能为空" placeholder="请输入Secret" value="{{ data.secret }}"
+                           class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">备注:</label>
+                <div class="layui-input-block">
+                    <textarea type="text" id="desc" name="desc" class="layui-textarea"
+                              placeholder="请输入备注信息">{{ data.desc | default_if_none:"" }}</textarea>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">
+                        确认保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        layui.use(['form', 'miniPage', 'tree', 'util'], function () {
+            var form = layui.form,
+                layer = layui.layer,
+                $ = layui.jquery;
+            var csrf_token = $('[name="csrfmiddlewaretoken"]').val();
+
+            form.render();
+            //监听提交
+            var parentIndex = layer.index;
+            form.on('submit(saveBtn)', function (data) {
+                data = data.field
+                layer.confirm('是否确认新建接口', {
+                    btn: ['确认', '关闭'] //按钮
+                }, function (index, layero) {
+                    $.ajax({
+                        url: "{% url "domains:api_edit" %}",
+                        type: "post",
+                        data: data,
+                        success: function (result) {
+                            if (result.code === 0) {
+                                layer.msg(result.msg, {icon: 6});
+                            } else {
+                                layer.msg(result.msg, {icon: 5});
+                            }
+                            parent.layui.table.reload("testReload");
+                            layer.close(parentIndex);
+                        }
+                    });
+                });
+            });
+            return false;
+        });
+    </script>
+{% endblock content %}

@@ -1,0 +1,63 @@
+{% csrf_token %}
+<div id="json-edit" style="height: 400px;width:99%;">
+</div>
+<script src="/static/layuimini/js/lay-module/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="/static/layuimini/js/lay-module/ace/theme/theme-chrome.js" type="text/javascript" charset="utf-8"></script>
+<script src="/static/layuimini/js/lay-module/ace/mode/mode-json.js" type="text/javascript" charset="utf-8"></script>
+
+
+<script>
+    //初始化对象
+    var json = ace.edit("json-edit");
+    //设置编辑器样式，对应theme-*.js文件
+    json.setTheme("ace/theme/chrome");
+    //设置代码语言，对应mode-*.js文件
+    json.session.setMode("ace/mode/json");
+    //设置打印线是否显示
+    json.setShowPrintMargin(false);
+
+    //字体大小
+    json.setFontSize(16);
+    //自动换行
+    json.setOption("wrap", true)
+    //设置只读（true时只读，用于展示代码）
+    json.setReadOnly(false);
+
+    // 获取编辑内容
+    /*
+    editor.getSession().on("change", function () {
+        var code = editor.getValue();
+        console.log(code)
+    });
+    */
+
+    layui.use(['layer'], function () {
+        var $ = layui.jquery;
+        layer = layui.layer;  // 获取到使用的组件
+
+
+        // 后端传：命名空间，资源，名称 。传过来的不是json对象，要转换
+        var hostname = "{{ hostname }}"
+        var namespace = "{{ namespace }}";
+        var resource = "{{ resource }}";
+        var name = "{{ name }}";
+        $.ajax({
+            url: '{% url "k8s_api:get_json" %}?hostname=' + hostname + '&namespace=' + namespace + '&resource=' + resource + "&name=" + name,
+            type: 'GET',
+            // 提交成功回调函数
+            success: function (res) {
+                if (res.code == '0') {
+                    json.setValue(res.data);   // 设置编辑内容
+                } else {
+                    layer.msg(res.msg, {icon: 5})
+                }
+            },
+            // 访问接口失败函数
+            error: function (res) {
+                layer.msg("服务器接口异常！", {icon: 5})
+            }
+        })
+    })
+
+</script>
+

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+    <style>
+        .layui-form-item .layui-input-company {
+            width: auto;
+            padding-right: 10px;
+            line-height: 38px;
+        }
+
+        .layui-upload-img {
+            width: 92px;
+            height: 92px;
+            margin: 0 10px 10px 0;
+        }
+    </style>
+    <div class="layui-card-body">
+        <div class="layui-form layuimini-form">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ profile.id }}">
+            <div class="layui-form-item">
+                <label class="layui-form-label required">账号:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="username" name="username" lay-verify="required" lay-reqtext="管理账号不能为空"
+                           placeholder="请输入账号" value="{{ profile.username | default_if_none:"" }}"
+                           {% if id %}readonly{% endif %} class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item" {% if id %}style="display:none;"{% endif %}>
+                <label class="layui-form-label required">密码:</label>
+                <div class="layui-input-block">
+                    <input type="password" id="password" name="password" {% if not id %}lay-verify="required"{% endif %}
+                           lay-reqtext="密码不能为空"
+                           placeholder="请输入账号密码" value="" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">姓名:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="name" name="name" lay-verify="required" lay-reqtext="用户姓名不能为空"
+                           placeholder="姓名" value="{{ profile.name | default_if_none:"" }}" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">性别:</label>
+                <div class="layui-input-block">
+                    <input type="radio" name="sex" value="1" title="男" {% if profile.sex == "1" %}
+                           checked="" {% endif %}>
+                    <input type="radio" name="sex" value="2" title="女" {% if profile.sex == "2" %}
+                           checked="" {% endif %}>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">角色:</label>
+                <div class="layui-input-block">
+                    <select name="role" lay-search="">
+                        <option value="">请选择分配角色</option>
+                        {% for i in role %}
+                            <option value="{{ i.id }}">{{ i.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">手机:</label>
+                <div class="layui-input-block">
+                    <input type="number" id="phone" name="phone" lay-verify="required|phone|number"
+                           lay-reqtext="手机不能为空"
+                           placeholder="请输入手机" value="{{ profile.phone | default_if_none:"" }}" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">邮箱:</label>
+                <div class="layui-input-block">
+                    <input type="email" name="email" placeholder="请输入邮箱"
+                           value="{{ profile.email | default_if_none:"" }}"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">身份证:</label>
+                <div class="layui-input-block">
+                    <input type="number" name="card_id" lay-verify="required|identity|number" placeholder="请输入身份证"
+                           value="{{ profile.card_id | default_if_none:"" }}"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">家庭地址:</label>
+                <div class="layui-input-block">
+                    <input type="text" name="home_address" placeholder="请输入家庭地址" lay-verify="required"
+                           value="{{ profile.home_address | default_if_none:"" }}" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label">备注信息:</label>
+                <div class="layui-input-block">
+                            <textarea type="text" id="desc" name="desc" class="layui-textarea"
+                                      placeholder="请输入备注信息">{{ profile.desc | default_if_none:"" }}</textarea>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">
+                        确认保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        layui.use(['form', 'miniPage'], function () {
+            var form = layui.form,
+                layer = layui.layer,
+                $ = layui.jquery;
+            /**
+             * 初始化表单，要加上，不然刷新部分组件可能会不加载
+             */
+            form.render();
+            //监听提交
+            var parentIndex = layer.index;
+            form.on('submit(saveBtn)', function (data) {
+                data = data.field
+                layer.confirm('是否确认修改', {
+                    btn: ['确认', '关闭'] //按钮
+                }, function (index, layero) {
+                    $.ajax({
+                        url: "{% url "user:edit_user"%}",
+                        type: "post",
+                        data: data,
+                        success: function (result) {
+                            if (result.code === 0) {
+                                layer.msg(result.msg, {icon: 6});
+                                layer.close(parentIndex);
+                            } else {
+                                layer.msg(result.msg, {icon: 5});
+                            }
+                            parent.layui.table.reload("testReload");
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+{% endblock content %}

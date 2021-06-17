@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+    <div class="layui-card-body">
+        <div class="layui-form layuimini-form">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ data.id }}">
+            <div class="layui-form-item">
+                <label class="layui-form-label required">姓名:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="name" name="name" lay-verify="required" lay-reqtext="姓名不能为空"
+                           placeholder="请输入联系人姓名" value="{{ data.name }}" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">手机:</label>
+                <div class="layui-input-block">
+                    <input type="" id="phone" name="phone" lay-verify="phone" lay-reqtext="手机号不能为空"
+                           placeholder="请输入手机号" value="{{ data.phone | default_if_none:"" }}" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">邮箱:</label>
+                <div class="layui-input-block">
+                    <input type="email" id="email" name="email" lay-verify="email"
+                           lay-reqtext="" placeholder="请输入电子邮箱" value="{{ data.email | default_if_none:"" }}"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">钉钉:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="ding" name="ding" lay-verify=""
+                           lay-reqtext="" placeholder="" value="{{ data.ding | default_if_none:"" }}"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">微信:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="wx_token" name="wx_token" lay-verify=""
+                           lay-reqtext="" placeholder="" value="{{ data.wx_token | default_if_none:"" }}"
+                           class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">企业微信:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="qy_wx" name="qy_wx" lay-verify=""
+                           lay-reqtext="" placeholder="" value="{{ data.qy_wx | default_if_none:"" }}"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">
+                        确认保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        layui.use(['form', 'miniPage', 'tree', 'util'], function () {
+            var form = layui.form,
+                layer = layui.layer,
+                $ = layui.jquery;
+
+            form.render();
+            var parentIndex = layer.index;
+            form.on('submit(saveBtn)', function (data) {
+                data = data.field
+                layer.confirm('是否确认新建联系人', {
+                    btn: ['确认', '关闭'] //按钮
+                }, function (index, layero) {
+                    $.ajax({
+                        url: "{% url "alarm:contact_edit" %}",
+                        type: "post",
+                        data: data,
+                        success: function (result) {
+                            if (result.code === 0) {
+                                layer.msg(result.msg, {icon: 6});
+                                parent.layui.table.reload("testReload");
+                            } else {
+                                layer.msg(result.msg, {icon: 5});
+                            }
+                        }
+                    });
+                    layer.close(index);
+                    layer.close(parentIndex);
+                });
+            });
+            return false;
+        });
+    </script>
+{% endblock content %}

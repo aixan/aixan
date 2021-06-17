@@ -1,0 +1,8 @@
+{% load static %}
+
+{% if user.is_authenticated %}
+    {% block content %}{% endblock content %}
+{% else %}
+    <!-- 未登录跳转登录页面 -->
+    <meta http-equiv="refresh" content="0; url={% url 'user:login' %}">
+{% endif %}

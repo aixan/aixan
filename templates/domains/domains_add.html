@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+    <style>
+        .layui-form-item .layui-input-company {
+            width: auto;
+            padding-right: 10px;
+            line-height: 38px;
+        }
+
+        .layui-upload-img {
+            width: 92px;
+            height: 92px;
+            margin: 0 10px 10px 0;
+        }
+
+        .layui-tree-set-active > .layui-tree-entry .layui-tree-main {
+            background: #f2f2f2;
+        }
+    </style>
+    <div class="layui-card-body">
+
+        <div class="layui-form layuimini-form">
+            {% csrf_token %}
+            <div class="layui-form-item">
+                <label class="layui-form-label required">云厂商:</label>
+                <div class="layui-input-block">
+                    <select name="id" lay-verify="required" lay-search="">
+                        {% for i in api %}
+                        <option value="{{ i.id }}">{{ i.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label required">域名:</label>
+                <div class="layui-input-block">
+                    <input type="text" id="domain" name="domain" lay-verify="required"
+                           lay-reqtext="域名不能为空" placeholder="请输入域名" value="" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">
+                        确认保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        layui.use(['form', 'miniPage', 'tree', 'util'], function () {
+            var form = layui.form,
+                layer = layui.layer,
+                $ = layui.jquery;
+            var csrf_token = $('[name="csrfmiddlewaretoken"]').val();
+
+            form.render();
+            //监听提交
+            var parentIndex = layer.index;
+            form.on('submit(saveBtn)', function (data) {
+                data = data.field
+                layer.confirm('是否确认新建域名', {
+                    btn: ['确认', '关闭'] //按钮
+                }, function (index, layero) {
+                    $.ajax({
+                        url: "{% url "domains:domain_add" %}",
+                        type: "post",
+                        data: data,
+                        success: function (result) {
+                            if (result.code === 0) {
+                                layer.msg(result.msg, {icon: 6});
+                                parent.layui.table.reload("testReload");
+                                layer.close(parentIndex);
+                            } else {
+                                layer.msg(result.msg, {icon: 6});
+                                parent.layui.table.reload("testReload");
+                                layer.close(parentIndex);
+                            }
+                        }
+                    });
+                });
+            });
+            return false;
+        });
+    </script>
+{% endblock content %}

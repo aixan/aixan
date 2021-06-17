@@ -1,0 +1,142 @@
+{% load static %}
+<link rel="stylesheet" href="/static/layuimini/js/lay-module/step-lay/step.css" media="all">
+
+<div class="layuimini-main">
+
+    <div class="layui-fluid">
+        <div class="layui-card">
+            <div class="layui-card-body" style="padding-top: 40px;">
+                <div class="layui-carousel" id="stepForm" lay-filter="stepForm" style="margin: 0 auto;">
+                    <div carousel-item>
+                        <div>
+                            <form class="layui-form" style="margin: 0 auto;max-width: 460px;padding-top: 40px;">
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label">监控类型:</label>
+                                    <div class="layui-input-block">
+                                        <select lay-verify="required">
+                                            <option value="1" selected>站点监控</option>
+                                            <option value="2">现金</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label">任务名称:</label>
+                                    <div class="layui-input-block">
+                                        <input type="text" placeholder="请填写任务名称" value="" class="layui-input"
+                                               lay-verify="required" required>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label">监控地址:</label>
+                                    <div class="layui-input-block">
+                                        <input type="text" placeholder="请填写监控地址" value="" class="layui-input"
+                                               lay-verify="number" required>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label">备注说明:</label>
+                                    <div class="layui-input-block">
+                                        <textarea placeholder="入款备注" value="" class="layui-textarea"></textarea>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <div class="layui-input-block">
+                                        <button class="layui-btn" lay-submit lay-filter="formStep">
+                                            &emsp;下一步&emsp;
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div>
+                                                        <form class="layui-form" style="margin: 0 auto;max-width: 460px;padding-top: 40px;">
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label">监控类型:</label>
+                                    <div class="layui-input-block">
+                                        <select lay-verify="required">
+                                            <option value="1" selected>站点监控</option>
+                                            <option value="2">现金</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label">任务名称:</label>
+                                    <div class="layui-input-block">
+                                        <input type="text" placeholder="请填写任务名称" value="" class="layui-input"
+                                               lay-verify="required" required>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label">监控地址:</label>
+                                    <div class="layui-input-block">
+                                        <input type="text" placeholder="请填写监控地址" value="" class="layui-input"
+                                               lay-verify="number" required>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <label class="layui-form-label">备注说明:</label>
+                                    <div class="layui-input-block">
+                                        <textarea placeholder="入款备注" value="" class="layui-textarea"></textarea>
+                                    </div>
+                                </div>
+                                <div class="layui-form-item">
+                                    <div class="layui-input-block">
+                                        <button type="button" class="layui-btn layui-btn-primary pre">上一步</button>
+                                        <button class="layui-btn" lay-submit lay-filter="formStep2">
+                                            &emsp;确认入款&emsp;
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['form', 'step'], function () {
+        var $ = layui.$,
+            form = layui.form,
+            step = layui.step;
+
+        /**
+         * 初始化表单，要加上，不然刷新部分组件可能会不加载
+         */
+        form.render();
+
+        step.render({
+            elem: '#stepForm',
+            filter: 'stepForm',
+            width: '100%', //设置容器宽度
+            stepWidth: '750px',
+            height: '500px',
+            stepItems: [{
+                title: '创建任务'
+            }, {
+                title: '设置规则'
+            }]
+        });
+
+
+        form.on('submit(formStep)', function (data) {
+            step.next('#stepForm');
+            return false;
+        });
+
+        form.on('submit(formStep2)', function (data) {
+            step.next('#stepForm');
+            return false;
+        });
+
+        $('.pre').click(function () {
+            step.pre('#stepForm');
+        });
+
+        $('.next').click(function () {
+            step.next('#stepForm');
+        });
+    })
+</script>

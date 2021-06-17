@@ -1,0 +1,89 @@
+<div class="layui-form" lay-filter="example">
+    {% csrf_token %}
+    <div id="yaml-edit" style="height: 380px;width:99%;">
+    </div>
+    <div class="layui-col-lg12" style="margin-top: 10px">
+        <div class="layui-col-lg8">
+            <blockquote class="layui-elem-quote">此操作相当于：kubectl apply -f spec.yaml</blockquote>
+        </div>
+        <div class="layui-col-lg4" style="background-color: #f2f2f2;height: 51.6px; text-align: center !important">
+            <button type="submit" class="layui-btn layui-btn-normal" style="margin-top: 6.8px" lay-submit lay-filter="saveBtn">立即提交
+            </button>
+        </div>
+    </div>
+</div>
+<script src="/static/layuimini/js/lay-module/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+
+<script>
+    //初始化对象
+    var yaml = ace.edit("yaml-edit");
+    //设置编辑器样式，对应theme-*.js文件
+    yaml.setTheme("ace/theme/chrome");
+    //设置代码语言，对应mode-*.js文件
+    yaml.session.setMode("ace/mode/yaml");
+    //设置打印线是否显示
+    yaml.setShowPrintMargin(false);
+    //字体大小
+    yaml.setFontSize(16);
+    //自动换行
+    yaml.setOption("wrap", true)
+    //设置只读（true时只读，用于展示代码）
+    yaml.setReadOnly(false);
+
+    layui.use(['layer', 'form'], function () {
+        var $ = layui.jquery;
+        form = layui.form;
+        layer = layui.layer;  // 获取到使用的组件
+
+        var hostname = "{{ hostname }}";
+        var namespace = "{{ namespace }}";
+        var resource = "{{ resource }}";
+        var name = "{{ name }}";
+        var types = "{{ types }}"
+        $.ajax({
+            url: '{% url "k8s_api:get_yaml" %}?hostname=' + hostname + '&namespace=' + namespace + '&resource=' + resource + "&name=" + name + "&types=" + types,
+            type: 'GET',
+            // 提交成功回调函数
+            success: function (res) {
+                if (res.code == '0') {
+                    yaml.setValue(res.data);   // 设置编辑内容
+                } else {
+                    layer.msg(res.msg, {icon: 5})
+                }
+            },
+            // 访问接口失败函数
+            error: function (res) {
+                layer.msg("服务器接口异常！", {icon: 5})
+            }
+        })
+        var parentIndex = layer.index;
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            data = data.field
+            {#data['hostname'] = hostname#}
+            data['namespace'] = namespace
+            data['resource'] = resource
+            data['name'] = name
+            data['yaml'] = yaml.getValue();
+            layer.confirm('是否确认修改', {
+                btn: ['确认', '关闭'] //按钮
+            }, function (index, layero) {
+                $.ajax({
+                    url: "{% url "k8s_api:get_yaml" %}?hostname=" + hostname,
+                    type: "post",
+                    data: data,
+                    success: function (res) {
+                        if (res.code === 0) {
+                            layer.msg(res.msg, {icon: 6});
+                            layer.close(parentIndex);
+                        } else {
+                            layer.msg(res.msg, {icon: 5});
+                            layer.close(parentIndex);
+                        }
+                    }
+                });
+            });
+        });
+    })
+</script>
+

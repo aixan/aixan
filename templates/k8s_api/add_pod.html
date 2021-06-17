@@ -1,0 +1,217 @@
+<style>
+    .layui-form-label1 {
+        float: left;
+        display: block;
+        padding: 9px 5.5px;
+        /* width: 80px; */
+        font-weight: 400;
+        line-height: 20px;
+        text-align: right;
+    }
+
+    .layui-form-label2 {
+        float: left;
+        display: block;
+        padding: 9px 15px;
+        width: 80px;
+        font-weight: 400;
+        line-height: 20px;
+        text-align: right;
+    }
+
+    .layui-form-item .layui-input-inline1 {
+        float: left;
+        width: 190px;
+    }
+</style>
+<div class="layui-card-body">
+    <div class="layui-form" lay-filter="example">
+        {% csrf_token %}
+        <div class="layui-row layui-col-space10 layui-form-item">
+            <div class="layui-col-lg6">
+                <label class="layui-form-label2">集群：</label>
+                <div class="layui-input-block">
+                    <select name="hostname" id="k8s1" lay-filter="hostname"></select>
+                </div>
+            </div>
+            <div class="layui-col-lg6">
+                <label class="layui-form-label2">命名空间：</label>
+                <div class="layui-input-block">
+                    <select name="namespace" lay-verify="required" placeholder="" lay-search="" id="nsSelect1"
+                            lay-filter="namespace">
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label2">Pod名称：</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" lay-verify="required" placeholder="请输入PV名称" value=""
+                       class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label2">Pod标签：</label>
+            <div class="layui-input-block">
+                <input type="text" name="labels" lay-verify="required" placeholder="请输入PV标签" value=""
+                       class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">存储容量：</label>
+            <div class="layui-input-block">
+                <input type="radio" name="capacity" value="1Gi" title="1Gi" checked="">
+                <input type="radio" name="capacity" value="5Gi" title="5Gi">
+                <input type="radio" name="capacity" value="10Gi" title="10Gi">
+                <input type="radio" name="capacity" value="20Gi" title="20Gi">
+                <input type="radio" name="capacity" title="自定义" disabled="">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">访问模式：</label>
+            <div class="layui-input-block">
+                <input type="radio" name="access_mode" value="ReadWriteMany" title="多节点读写" checked="">
+                <input type="radio" name="access_mode" value="ReadOnlyMany" title="多节点只读">
+                <input type="radio" name="access_mode" value="ReadWriteOnce" title="单节点读写">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label2">挂载路径：</label>
+            <div class="layui-input-block">
+                <input type="text" name="mount_path" lay-verify="required" placeholder="示例：pv0001"
+                       autocomplete="off"
+                       class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item ">
+            <div class="layui-input-block">
+                <button type="submit" class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">立即提交
+                </button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['form', 'table', 'miniPage', 'element'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            miniPage = layui.miniPage;
+        var storage = window.sessionStorage;
+
+        hostname = storage.getItem("hostname");
+        namespace = storage.getItem("namespace");
+        console.log(hostname)
+        $.ajax({
+            type: "get",
+            url: "{% url 'k8s:get_k8s' %}?hostname=" + hostname,
+            async: false,
+            success: function (res) {
+                if (res.code === 0) {
+                    for (let index in res.hostname) {
+                        row = res.hostname[index];
+                        $("#k8s1").append('<option value=' + row.hostname + '>' + row.hostname + '</option>')
+                    }
+                    $("#k8s1").val(res.hostname[0].hostname)
+                    for (let index in res.namespace) {
+                        rew = res.namespace[index];
+                        $("#nsSelect1").append('<option value=' + rew.name + '>' + rew.name + '</option>')
+                    }
+                    $("#nsSelect1").val("default")
+                }
+            },
+            error: function () {
+                layer.msg("服务器接口异常！", {icon: 5})
+            }
+        });
+
+        if (hostname == null) {
+            var k8s_host = $("#k8s1").val();
+            storage.setItem('hostname', k8s_host)
+            var hostname = storage.getItem("hostname");
+        } else {
+            $("#k8s1").val(hostname)
+        }
+
+        if (namespace == null) {
+            var k8s_ns = $("#nsSelect1").val();
+            storage.setItem('namespace', k8s_ns)
+            var namespace = storage.getItem("namespace");
+        } else {
+            $("#nsSelect1").val(namespace)
+        }
+
+        form.on('select(hostname)', function (data) {
+            k8s_host = data.value;
+            storage.setItem('hostname', k8s_host);
+            hostname = storage.getItem("hostname");
+            namespace = storage.getItem("namespace")
+            $("#nsSelect1").find('option').remove();
+            $.ajax({
+                type: "get",
+                url: "{% url 'k8s_api:get_namespace' %}?hostname=" + hostname,
+                async: false,
+                success: function (res) {
+                    if (res.code === 0) {
+                        var namesp = new Array();
+                        for (let index in res.data) {
+                            rew = res.data[index];
+                            $("#nsSelect1").append('<option value=' + rew.name + '>' + rew.name + '</option>')
+                            namesp.push(rew.name)
+                        }
+                        if (namesp.indexOf(namespace) != -1) {
+                            $("#nsSelect1").val(namespace)
+                        } else {
+                            $("#nsSelect1").val("default")
+                            storage.setItem('namespace', "default");
+                        }
+                    }
+                },
+                error: function () {
+                    layer.msg("服务器接口异常！", {icon: 5})
+                }
+            });
+            form.render();
+        });
+
+        form.on('select(namespace)', function (data) {
+            k8s_ns = data.value;
+            storage.setItem('namespace', k8s_ns);
+        });
+
+        form.render();
+
+        // 当前弹出层，防止ID被覆盖
+        var parentIndex = layer.index;
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            data = data.field
+            alert(JSON.stringify(data))
+            layer.confirm('是否确认添加', {
+                btn: ['确认', '关闭'] //按钮
+            }, function (index, layero) {
+                $.ajax({
+                    url: "{% url "k8s_api:get_pod" %}",
+                    type: "post",
+                    data: data,
+                    success: function (result) {
+                        console.log(result);
+                        if (result.code === 0) {
+                            // 修改完成后,本地直接更新数据,这样就无需刷新一次了 obj.update({zone: zone});
+                            layer.msg(result.msg, {icon: 6});
+                            parent.layui.table.reload("testReload");
+                            layer.close(index);
+                            layer.close(parentIndex);
+                        } else {
+                            layer.msg(result.msg, {icon: 6});
+                            parent.layui.table.reload("testReload");
+                            layer.close(index);
+                            layer.close(parentIndex);
+                        }
+                    }
+                });
+            });
+        });
+    });
+</script>

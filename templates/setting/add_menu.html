@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+    <style>
+        .layui-form-item .layui-input-company {
+            width: auto;
+            padding-right: 10px;
+            line-height: 38px;
+        }
+
+        .layui-upload-img {
+            width: 92px;
+            height: 92px;
+            margin: 0 10px 10px 0;
+        }
+
+        .layui-tree-set-active > .layui-tree-entry .layui-tree-main {
+            background: #f2f2f2;
+        }
+    </style>
+    <div class="layui-card-body">
+
+        <div class="layui-form layuimini-form">
+            {% csrf_token %}
+            <input type="hidden" id="pid" name="pid" value="">
+            <input type="hidden" id="created_by" name="created_by" value="{{ user.id }}">
+            <div class="layui-col-lg12">
+                <div class="layui-col-lg4">
+                    <div class="layui-card">
+                        <div class="layui-card-header">上级菜单</div>
+                        <div class="layui-card-body">
+                            <div id="test4" class="demo-tree">
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-lg8">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label required">名称:</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="title" name="title" lay-verify="required" lay-reqtext="菜单名称不能为空"
+                                   placeholder="请输入菜单名称" value="" class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label required">图标:</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="icon" name="icon" lay-verify="" lay-reqtext="图标不能为空"
+                                   placeholder="请输入图标" value="fa " class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label required">href:</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="href" name="href" lay-verify=""
+                                   lay-reqtext=""
+                                   placeholder="请输入菜单url" value="" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label required">排序:</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="sort" name="sort" lay-verify=""
+                                   lay-reqtext=""
+                                   placeholder="请输入排序" value="0" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label required">状态:</label>
+                        <div class="layui-input-block">
+                            <input type="radio" name="status" value="true" title="启用" checked="">
+                            <input type="radio" name="status" value="false" title="禁用">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label required">跳转:</label>
+                        <div class="layui-input-block">
+                            <input type="radio" name="target" value="_self" title="_self" checked="">
+                            <input type="radio" name="target" value="_blank" title="_blank"
+                                    {% if target == "_blank" %}
+                                   checked="" {% endif %}>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item layui-form-text">
+                        <label class="layui-form-label">备注信息:</label>
+                        <div class="layui-input-block">
+                            <textarea type="text" id="desc" name="desc" class="layui-textarea"
+                                      placeholder="请输入备注信息"></textarea>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">
+                                确认保存
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        layui.use(['form', 'miniPage', 'tree', 'util'], function () {
+            var form = layui.form,
+                layer = layui.layer,
+                $ = layui.jquery;
+            var tree = layui.tree, util = layui.util
+            var csrf_token = $('[name="csrfmiddlewaretoken"]').val();
+
+            $.ajax({
+                url: "{% url "setting:add_menu"%}",
+                type: "MENU",
+                headers: {"X-CSRFToken": csrf_token},
+                success: function (res) {
+                    if (res.code === 0) {
+                        tree.render({
+                            elem: '#test4',
+                            id: "demoId",
+                            data: res.data,
+                            accordion: true,
+                            text: {
+                                none: '<div class="cate-empty">无</div>',
+                            },
+                            click: function (obj) {
+                                $("#pid").val(obj.data.id)
+                                $(".layui-tree-set").removeClass('layui-tree-set-active');
+                                obj.elem.addClass('layui-tree-set-active');
+                            }
+                        });
+                    } else {
+                    }
+                }
+            });
+
+            form.render();
+            //监听提交
+            var parentIndex = layer.index;
+            form.on('submit(saveBtn)', function (data) {
+                data = data.field
+                layer.confirm('是否确认新建菜单', {
+                    btn: ['确认', '关闭'] //按钮
+                }, function (index, layero) {
+                    $.ajax({
+                        url: "{% url "setting:add_menu"%}",
+                        type: "post",
+                        data: data,
+                        success: function (result) {
+                            if (result.code === 0) {
+                                layer.msg(result.msg, {icon: 6});
+                                layer.close(parentIndex);
+                            } else {
+                                layer.msg(result.msg, {icon: 6});
+                                layer.close(parentIndex);
+                            }
+                        }
+                    });
+                });
+            });
+            return false;
+        });
+    </script>
+{% endblock content %}
